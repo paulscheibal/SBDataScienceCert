@@ -2,6 +2,8 @@ this is text
 
 adding new line
 
+changing a line in the middle
+
 Yet another line
 
 This is the story
