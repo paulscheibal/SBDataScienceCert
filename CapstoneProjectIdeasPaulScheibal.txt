@@ -1,0 +1,26 @@
+Capstone Project 1 Idea – Prescription Drug Trends for Seniors (55 or older)
+
+For older Americans, prescription drugs are expensive especially those on a limited budget.  I would like to know, for chronic diseases 
+and for seniors (55 and older), what is the per unit trend for cost of drugs as compared to trend for income of those 55 or older.  
+I would also like to create a predictive model that projects costs of drug categories such as Diabetes drugs for seniors in the future.   
+To do this the federal government publishes National Average Drug Acquisition Costs (NADAC) by National Drug Codes (NDC) code.   
+The trick is going to be to relate the ATC codes with NDC codes to get proper summary data such as all drugs used to treat Diabetes 
+for example.  Fortunately, Fabricio Kury has already done this to some degree of accuracy and has published his R code, his accuracy 
+and data on GitHub.  Fabricio Kury is a Postdoctoral Research Scientist at Columbia University in New York City.
+
+Capstone Project 2 Idea – Chronic Disease Prescription Drug Trends in US
+
+Look at the trend for cost of drugs in US for chronic diseases.  I would also like to create a predictive model that projects per unit 
+costs of chronic disease drug categories in the future.   To do this the federal government publishes National Average Drug Acquisition 
+Costs (NADAC) by National Drug Codes (NDC) code.   The trick is going to be to relate the ATC codes with NDC codes to get proper summary 
+data such as all drugs used to treat Diabetes for example.  Fortunately, Fabricio Kury has already done this to some degree of accuracy 
+and has published his R code, his accuracy and data on GitHub.  Fabricio Kury is a Postdoctoral Research Scientist at Columbia University 
+in New York City.
+
+Capstone Project 3 Idea – MLB Baseball Player Performance Outlook
+
+I would like to look at MLB baseball information to determine at what point hitter performance starts to degrade.   Sean Lahman maintains 
+a database of information on baseball from 1871 to 2017.  I would like to analyze performance of position players to determine a 
+trend as to when performance starts to degrade and what are the parameters that cause this (ex: age?).   Next would be to create a 
+predictive model that predicts when a player will start to degrade in player performance.   Sean has twenty-seven tables of baseball 
+information collected through 2017.
