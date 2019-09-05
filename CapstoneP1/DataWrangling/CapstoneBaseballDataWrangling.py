@@ -74,7 +74,7 @@ def avg_yearly_AB(df):
 print('\n')
 print('Data Sources Initial Assessment BEGIN==========================================')
 print('\n')
-# read in batting csv file
+# read in batting csv file 
 hitsf = path + hitsfile
 dfhits = pd.read_csv(hitsf)
 dfhits = dfhits.reset_index(drop=True)
