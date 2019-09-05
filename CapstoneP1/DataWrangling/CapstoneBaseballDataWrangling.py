@@ -23,7 +23,7 @@ from datetime import datetime
 from pybaseball import batting_stats
 import os.path
 
-# set path for reading Lahman baseball statistics
+# set path for reading Lahman baseball statistics 
 path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
 hitsfile = 'Batting.csv'
 peoplefile = 'People.csv'
