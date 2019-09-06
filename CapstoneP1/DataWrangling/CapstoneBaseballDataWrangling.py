@@ -41,13 +41,17 @@ nans_df = lambda df: df.loc[df.isnull().any(axis=1)]
 
 # checks to see if validation file exists, if not it reads data from fangraphs otherwise uses file that already exists.
 # if fangraphs API is called it writes the validation file for later use.  takes a long time for API call.
-def get_fangraphs_data(startyear, endyear):
+def get_fangraphs_data(startyear, endyear, force_API):
     fgf = path + fangraphsfile
-    if os.path.exists(fgf):
-        data = pd.read_csv(fgf)
-    else:
+    if force_API == True:
         data = batting_stats(startyear,endyear)
         export_csv = data.to_csv(fgf, index=None, header=True)
+    else:
+        if os.path.exists(fgf):
+            data = pd.read_csv(fgf)
+        else:
+            data = batting_stats(startyear,endyear)
+            export_csv = data.to_csv(fgf, index=None, header=True)
     return data
 
 # function to take a baseball dataframe by yearID, playerID and AB and return the average number of at bats 
@@ -65,6 +69,57 @@ def avg_yearly_AB(df):
     dfgrp = dfgrp.reset_index(drop=True)
     dfgrp.avg_yrly_AB = dfgrp.avg_yrly_AB.astype(np.int64)
     return dfgrp
+
+# function to take a year of data and put it in format to do comparisons with layman data
+def fangraphs_wrangle(dffangraphs):
+    dffangraphs = data[['Name','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']]
+    convert_dict = {
+                 'G':np.int64,
+                 'AB':np.int64,
+                 'H':np.int64,
+                 '2B':np.int64,
+                 '3B':np.int64,
+                 'HR':np.int64,
+                 'SF':np.int64,
+                 'BB':np.int64,
+                 'HBP':np.int64
+               }
+    dffangraphs = dffangraphs.astype(convert_dict)
+    dffangraphs.columns = ['playername','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']
+    dffangraphs = dffangraphs.reset_index(drop=True)
+    dffangraphs = dffangraphs.groupby('playername').sum()
+    dffangraphs = dffangraphs.reset_index()
+    dffangraphs = dffangraphs[dffangraphs['AB'] >= MIN_AT_BATS]
+    dffangraphs = dffangraphs.reset_index()
+    return(dffangraphs)
+
+# function to take a year of data and put it in format to do comparisons to fangraphs data
+def layman_wrangle(dfbatting,year):
+    # filter on AB for minimum at bats.  dfbatting is a copy of dfbatting_player_stats prior to filtering avg_yrly_AB
+    dfhits_playersval = dfbatting[dfbatting['AB'] >= MIN_AT_BATS]
+
+    dfhitsyr = dfhits_playersval[(dfhits_playersval['yearID'] == year)][['playername','playerID','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']]
+    dfhitsyr = dfhits_2017.reset_index(drop=True)
+    return(dfhitsyr)
+    
+# function to calculate differences between fangraphs and layman
+def validate_batting_data(dffangraphs, dfhits):
+    dfhits_val = pd.merge(dfhits,dffangraphs,on='playername')
+    dfhits_diff = pd.DataFrame()
+    dfhits_diff['playername'] = dfhits_val['playername']
+    dfhits_diff['G_diff'] = dfhits_val['G_x'] - dfhits_val['G_y']
+    dfhits_diff['AB_diff'] = dfhits_val['AB_x'] - dfhits_val['AB_y']
+    dfhits_diff['H_diff'] = dfhits_val['H_x'] - dfhits_val['H_y']
+    dfhits_diff['2B_diff'] = dfhits_val['2B_x'] - dfhits_val['2B_y']
+    dfhits_diff['3B_diff'] = dfhits_val['3B_x'] - dfhits_val['3B_y']
+    dfhits_diff['HR_diff'] = dfhits_val['HR_x'] - dfhits_val['HR_y']
+    dfhits_diff['SF_diff'] = dfhits_val['SF_x'] - dfhits_val['SF_y']
+    dfhits_diff['BB_diff'] = dfhits_val['BB_x'] - dfhits_val['BB_y']
+    dfhits_diff['HBP_diff'] = dfhits_val['HBP_x'] - dfhits_val['HBP_y']
+    dfhits_diff['SLG_diff'] = (dfhits_val['SLG_x'] - dfhits_val['SLG_y']).round(4)
+    dfhits_diff['OBP_diff'] = (dfhits_val['OBP_x'] - dfhits_val['OBP_y']).round(4)
+    dfhits_diff['OPS_diff'] = (dfhits_val['OPS_x'] - dfhits_val['OPS_y']).round(4)
+    return dfhits_diff
 
 ######################################################################################
 #
@@ -392,59 +447,24 @@ print('\n')
 print('Independent Validation START===================================================')
 print('\n')
 #specify startyear to the endyear of the data you want returned
-data = get_fangraphs_data(2017,2017)
+data = get_fangraphs_data(2017,2017,force_API=False)
+dffangraphs_2017 = fangraphs_wrangle(data)
 
-# fangraphs data is converted to int64
-dffangraphs_2017 = data[['Name','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']]
-convert_dict = {
-                 'G':np.int64,
-                 'AB':np.int64,
-                 'H':np.int64,
-                 '2B':np.int64,
-                 '3B':np.int64,
-                 'HR':np.int64,
-                 'SF':np.int64,
-                 'BB':np.int64,
-                 'HBP':np.int64
-               }
-dffangraphs_2017 = dffangraphs_2017.astype(convert_dict)
-dffangraphs_2017.columns = ['playername','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']
-dffangraphs_2017 = dffangraphs_2017.reset_index(drop=True)
-dffangraphs_2017 = dffangraphs_2017.groupby('playername').sum()
-dffangraphs_2017 = dffangraphs_2017.reset_index()
-dffangraphs_2017 = dffangraphs_2017[dffangraphs_2017['AB'] >= MIN_AT_BATS]
-dffangraphs_2017 = dffangraphs_2017.reset_index()
 print('Fangraph data for 2017 with minimum at bats of MIN_AT_BATS --------------------')
 print('\n')
 print(dffangraphs_2017.head(20))
 print(dffangraphs_2017.info())
+#get 2017 data from layman data for comparison to fangraphs
+dfhits_2017 = layman_wrangle(dfbatting,2017)
 
-# filter on AB for minimum at bats.  dfbatting is a copy of dfbatting_player_stats prior to filtering avg_yrly_AB
-dfhits_playersval = dfbatting[dfbatting['AB'] >= MIN_AT_BATS]
-
-dfhits_2017 = dfhits_playersval[(dfhits_playersval['yearID'] == 2017)][['playername','playerID','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']]
-dfhits_2017 = dfhits_2017.reset_index(drop=True)
 print('Batting data for 2017 with minimum at bats of MIN_AT_BATS ---------------------')
 print('\n')
 print(dfhits_2017.head(20))
 print(dfhits_2017.info())
 
-dfhits_val = pd.merge(dfhits_2017,dffangraphs_2017,on='playername')
-#print(dfhits_val)
-dfhits_diff = pd.DataFrame()
-dfhits_diff['playername'] = dfhits_val['playername']
-dfhits_diff['G_diff'] = dfhits_val['G_x'] - dfhits_val['G_y']
-dfhits_diff['AB_diff'] = dfhits_val['AB_x'] - dfhits_val['AB_y']
-dfhits_diff['H_diff'] = dfhits_val['H_x'] - dfhits_val['H_y']
-dfhits_diff['2B_diff'] = dfhits_val['2B_x'] - dfhits_val['2B_y']
-dfhits_diff['3B_diff'] = dfhits_val['3B_x'] - dfhits_val['3B_y']
-dfhits_diff['HR_diff'] = dfhits_val['HR_x'] - dfhits_val['HR_y']
-dfhits_diff['SF_diff'] = dfhits_val['SF_x'] - dfhits_val['SF_y']
-dfhits_diff['BB_diff'] = dfhits_val['BB_x'] - dfhits_val['BB_y']
-dfhits_diff['HBP_diff'] = dfhits_val['HBP_x'] - dfhits_val['HBP_y']
-dfhits_diff['SLG_diff'] = (dfhits_val['SLG_x'] - dfhits_val['SLG_y']).round(4)
-dfhits_diff['OBP_diff'] = (dfhits_val['OBP_x'] - dfhits_val['OBP_y']).round(4)
-dfhits_diff['OPS_diff'] = (dfhits_val['OPS_x'] - dfhits_val['OPS_y']).round(4)
+# calculate differences between fangraphs and layman data
+dfhits_diff = validate_batting_data(dffangraphs_2017, dfhits_2017)
+
 print('Result of differences of statistics False means differneces--------------------')
 print('Ignore playername False -------------------------------------------------------')
 print('\n')
