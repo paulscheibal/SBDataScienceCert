@@ -23,7 +23,7 @@ from datetime import datetime
 from pybaseball import batting_stats
 import os.path
 
-# set path for reading Lahman baseball statistics 
+# set path for reading Lahman baseball statistics
 path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
 hitsfile = 'Batting.csv'
 peoplefile = 'People.csv'
@@ -74,7 +74,7 @@ def avg_yearly_AB(df):
 print('\n')
 print('Data Sources Initial Assessment BEGIN==========================================')
 print('\n')
-# read in batting csv file 
+# read in batting csv file
 hitsf = path + hitsfile
 dfhits = pd.read_csv(hitsf)
 dfhits = dfhits.reset_index(drop=True)
@@ -373,6 +373,8 @@ print('\n')
 dfbatting_player_stats  = dfbatting_player_stats[dfbatting_player_stats['avg_yrly_AB'] >= MIN_AT_BATS]
 print(dfbatting_player_stats.head(20))
 print(dfbatting_player_stats.info())
+print(dfbatting_player_stats[['yearID','playerID','playername','years_played']])
+print(dfbatting_player_stats[['yearID','playerID','playername','avg_yrly_AB']])
 
 print(dfbatting_player_stats.head(20))
 print(dfbatting_player_stats.info(20))
@@ -420,7 +422,7 @@ print(dffangraphs_2017.info())
 # filter on AB for minimum at bats.  dfbatting is a copy of dfbatting_player_stats prior to filtering avg_yrly_AB
 dfhits_playersval = dfbatting[dfbatting['AB'] >= MIN_AT_BATS]
 
-dfhits_2017 = dfhits_playersval[(dfhits_playersval['yearID'] == 2017)][['playername','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']]
+dfhits_2017 = dfhits_playersval[(dfhits_playersval['yearID'] == 2017)][['playername','playerID','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']]
 dfhits_2017 = dfhits_2017.reset_index(drop=True)
 print('Batting data for 2017 with minimum at bats of MIN_AT_BATS ---------------------')
 print('\n')
@@ -455,10 +457,14 @@ print('Manual Margot OBP between batting and fangraphs is rounding error -------
 print(dfhits_diff[dfhits_diff['G_diff'] != 0])
 print(dfhits_diff[dfhits_diff['OBP_diff'] != 0][['playername','OBP_diff']])
 print(dfhits_val[dfhits_val['playername'] == 'Manuel Margot'][['playername','OBP_x','OBP_y', 'OPS_x','OPS_y']])
-x = dfhits_2017['playername']
-y = dffangraphs_2017['playername']
+
+print(dfbatting_player_stats)
+print(dfhits_diff)
+print(result)
 print('Players in Batters but not in Fangraphs --------------------------------------')
 print('\n')
+x = dfhits_2017['playername']
+y = dffangraphs_2017['playername']
 z = list(set(x).difference(set(y)))
 z = sorted(z)
 for v in z:
@@ -469,8 +475,29 @@ z = list(set(y).difference(set(x)))
 z = sorted(z)
 for v in z:
     print(v)
+dfbatting = dfbatting[(dfbatting['AB'] >= MIN_AT_BATS)]
+dfyrcounts = dfbatting_player_stats.groupby('yearID').count()
+print(dfyrcounts['playerID'])
+dfyrcounts = dfbatting.groupby('yearID').count()
+print(dfyrcounts['playerID'])
+dfplcounts = dfbatting_player_stats.groupby('playerID').count()
+print(dfplcounts['playername'])
+print(dffangraphs_2017.info())
+print(dfhits_2017.info())
+dfbatting = dfbatting[dfbatting['yearID'] == 2017]
+dfplayerlist1 = dfhits_2017['playerID']
+dfplayerlist2 = dfbatting['playerID']
+x = list(set(dfplayerlist1).difference(set(dfplayerlist2)))
+y = list(set(dfplayerlist2).difference(set(dfplayerlist1)))
+print(len(x))
+print(len(y))
+print(x)
+print(y)
 print('Player discrepancies can be explained are available in XLS spreadsheet--------')
 print('\n')
 print('Independent Validation END====================================================')
 print('\n')
 
+x = dfbatting_player_stats[dfbatting_player_stats['playerID'] == 'adcocjo01']['AB'].sum()
+y = dfbatting_player_stats[dfbatting_player_stats['playerID'] == 'adcocjo01']['AB'].count()
+print(x,y,x/y)
