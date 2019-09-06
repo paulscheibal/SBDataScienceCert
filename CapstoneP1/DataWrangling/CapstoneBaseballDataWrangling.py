@@ -90,7 +90,7 @@ def fangraphs_wrangle(dffangraphs):
     dffangraphs = dffangraphs.groupby('playername').sum()
     dffangraphs = dffangraphs.reset_index()
     dffangraphs = dffangraphs[dffangraphs['AB'] >= MIN_AT_BATS]
-    dffangraphs = dffangraphs.reset_index()
+    dffangraphs = dffangraphs.reset_index(drop=True)
     return(dffangraphs)
 
 # function to take a year of data and put it in format to do comparisons to fangraphs data
