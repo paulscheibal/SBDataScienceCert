@@ -31,7 +31,7 @@ teamfile = 'Teams.csv'
 # file where validation against fangraphs will reside
 fangraphsfile = 'fangraphs.csv'
 
-MIN_AT_BATS = 300
+MIN_AT_BATS = 100
 START_YEAR = 1954
 START_DATE = datetime.strptime(str(START_YEAR)+'-01-01','%Y-%m-%d')
 
@@ -99,7 +99,7 @@ def layman_wrangle(dfbatting,year):
     dfhits_playersval = dfbatting[dfbatting['AB'] >= MIN_AT_BATS]
 
     dfhitsyr = dfhits_playersval[(dfhits_playersval['yearID'] == year)][['playername','playerID','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']]
-    dfhitsyr = dfhits_2017.reset_index(drop=True)
+    dfhitsyr = dfhitsyr.reset_index(drop=True)
     return(dfhitsyr)
     
 # function to calculate differences between fangraphs and layman
@@ -119,7 +119,7 @@ def validate_batting_data(dffangraphs, dfhits):
     dfhits_diff['SLG_diff'] = (dfhits_val['SLG_x'] - dfhits_val['SLG_y']).round(4)
     dfhits_diff['OBP_diff'] = (dfhits_val['OBP_x'] - dfhits_val['OBP_y']).round(4)
     dfhits_diff['OPS_diff'] = (dfhits_val['OPS_x'] - dfhits_val['OPS_y']).round(4)
-    return dfhits_diff
+    return dfhits_diff, dfhits_val;
 
 ######################################################################################
 #
@@ -179,9 +179,10 @@ print(dfhits_nan.info())
 print(dfhits_nan.shape)
 print(max(dfhits_nan.loc[:,'yearID']))
 dfhits_nan = dfhits_nan[dfhits_nan['yearID'] >= START_YEAR]
-print('Info for dfhits_nan ... should be no values------------------------------------')
+print('Info for dfhits_nan ... should be no non-null values---------------------------')
 print('\n')
 print(dfhits_nan.info())
+print(dfhits_nan)
 
 # use only data starting with the first year of non-NaN values
 print('NaN Analysis with Start Year (NOTE NO NaN values) -----------------------------')
@@ -235,6 +236,7 @@ dfplayers_nan = dfplayers_nan[dfplayers_nan.finalGame > START_DATE]
 print('Info for dfplayers_nan ... should be no values---------------------------------')
 print('\n')
 print(dfplayers_nan.info())
+print(dfhits_nan)
 # need to convert finalGame to datetime now so only pertinet players are retained
 dfplayers_ops.finalGame = pd.to_datetime(dfplayers_ops.finalGame, format='%Y-%m-%d')
 dfplayers_ops_final = dfplayers_ops[dfplayers_ops.finalGame >= START_DATE]
@@ -463,7 +465,7 @@ print(dfhits_2017.head(20))
 print(dfhits_2017.info())
 
 # calculate differences between fangraphs and layman data
-dfhits_diff = validate_batting_data(dffangraphs_2017, dfhits_2017)
+dfhits_diff, dfhits_val = validate_batting_data(dffangraphs_2017, dfhits_2017)
 
 print('Result of differences of statistics False means differneces--------------------')
 print('Ignore playername False -------------------------------------------------------')
@@ -476,13 +478,16 @@ print(result)
 print('Manual Margot OBP between batting and fangraphs is rounding error ------------')
 print(dfhits_diff[dfhits_diff['G_diff'] != 0])
 print(dfhits_diff[dfhits_diff['OBP_diff'] != 0][['playername','OBP_diff']])
+print(dfhits_diff.info())
 print(dfhits_val[dfhits_val['playername'] == 'Manuel Margot'][['playername','OBP_x','OBP_y', 'OPS_x','OPS_y']])
 
 print(dfbatting_player_stats)
 print(dfhits_diff)
 print(result)
+# determine values which will not join due to name differences between fangraphs and layman
 print('Players in Batters but not in Fangraphs --------------------------------------')
 print('\n')
+
 x = dfhits_2017['playername']
 y = dffangraphs_2017['playername']
 z = list(set(x).difference(set(y)))
@@ -495,6 +500,8 @@ z = list(set(y).difference(set(x)))
 z = sorted(z)
 for v in z:
     print(v)
+    
+# calculate the number of players in each year that will be used going forward
 dfbatting = dfbatting[(dfbatting['AB'] >= MIN_AT_BATS)]
 dfyrcounts = dfbatting_player_stats.groupby('yearID').count()
 print(dfyrcounts['playerID'])
@@ -504,6 +511,7 @@ dfplcounts = dfbatting_player_stats.groupby('playerID').count()
 print(dfplcounts['playername'])
 print(dffangraphs_2017.info())
 print(dfhits_2017.info())
+# this comparison probably not needed.  Just making sure 2017 processing did not muck up the data which it did not.
 dfbatting = dfbatting[dfbatting['yearID'] == 2017]
 dfplayerlist1 = dfhits_2017['playerID']
 dfplayerlist2 = dfbatting['playerID']
