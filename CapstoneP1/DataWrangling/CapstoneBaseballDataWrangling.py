@@ -176,9 +176,16 @@ playersf = path + peoplefile
 dfplayers = pd.read_csv(playersf)
 dfplayers = dfplayers.reset_index(drop=True)
 dfplayers_ops = dfplayers.loc[:,['playerID','birthYear','birthMonth','birthDay','nameFirst','nameLast','debut','finalGame']]
-dfplayers_ops = pd.merge(dfplayers_ops, dffielding_primary_position, on='playerID')
+
+# merge two files together using left outer join.  Some fielding records are missing
+dfplayers_ops = pd.merge(dfplayers_ops, dffielding_primary_position, on='playerID', how='left')
 print(dfplayers_ops.head(20))
 print(dfplayers_ops.info())
+stp = list(dfplayers_ops['playerID'])
+stf = list(dfplayers['playerID'])
+result = set(stf).difference(set(stp))
+result = list(result)
+print(result)
 
 ######################################################################################
 #
@@ -278,9 +285,10 @@ print('\n')
 print(dfplayers_nan.info())
 print(dfhits_nan)
 # need to convert finalGame to datetime now so only pertinet players are retained
-dfplayers_ops.finalGame = pd.to_datetime(dfplayers_ops.finalGame, format='%Y-%m-%d')
-dfplayers_ops_final = dfplayers_ops[dfplayers_ops.finalGame >= START_DATE]
-dfplayers_nan = dfplayers_nan[dfplayers_nan.finalGame > START_DATE]
+dfplayers_ops_final = dfplayers_ops.copy()
+dfplayers_ops_final.finalGame = pd.to_datetime(dfplayers_ops.finalGame, format='%Y-%m-%d')
+dfplayers_ops_final = dfplayers_ops_final[dfplayers_ops_final.finalGame >= START_DATE]
+
 print('Players now have no missing values starting at 1954----------------------------')
 print('\n')
 print(dfplayers_ops_final.head(20))
@@ -368,6 +376,11 @@ dfhits_ops_final = dfhits_ops_final.reset_index()
 print('Before joining batting to players---------------------------------------------')
 print('\n')
 print(dfhits_ops_final.info())
+stbatting = list(dfhits_ops_final['playerID'])
+stplayers = list(dfplayers_ops_final['playerID'])
+result = set(stbatting).difference(set(stplayers))
+print(results)
+
 dfbatting_player_stats = pd.merge(dfhits_ops_final,dfplayers_ops_final,on='playerID')
 # no need to have pitchers in batters information.  We are looking at position players only
 dfpitchers = dfbatting_player_stats[dfbatting_player_stats['POS_Cat'] == 'Pitcher']
@@ -382,20 +395,9 @@ print(dfbatting_player_stats.info())
 # should get null set
 print('Verifying Referential Integrity to players -----------------------------------')
 print('\n')
-sthits = dfhits_ops_final['playerID'] 
+sthits = dfbatting_player_stats['playerID'] 
 stplayers = dfplayers_ops_final['playerID']
 results = list(set(sthits).difference(set(stplayers)))
-print(results)
-
-# there are a handfull of players who were pinch hitters in the 1950's. They did not have a position
-# and only played for a very limited time.  ommitting them
-dfhits_ops_final = dfhits_ops_final[~dfhits_ops_final['playerID'].isin(results)]
-
-print('Verifying Referential Integrity to players II-------------------------------')
-print('\n')
-sthits1 = dfhits_ops_final['playerID'] 
-sthits2 = dfbatting_player_stats['playerID']
-results = list(set(sthits1).difference(set(sthits2)))
 print(results)
 
 #print('Joining batting to teams -----------------------------------------------------')
@@ -487,6 +489,9 @@ print(dfbatting_player_stats.head(20))
 print(dfbatting_player_stats.info())
 print(dfbatting_player_stats[['yearID','playerID','playername','years_played']])
 print(dfbatting_player_stats[['yearID','playerID','playername','avg_yrly_AB']])
+
+# calculate age of player during that year in play.  Since later part of year is when teams play...added 1 to year.
+dfbatting_player_stats['age'] = dfbatting_player_stats['yearID'] - pd.DatetimeIndex(dfbatting_player_stats['birthdate']).year + 1
 
 print(dfbatting_player_stats.head(20))
 print(dfbatting_player_stats.info(20))
@@ -596,5 +601,20 @@ print(x,y,x/y)
 #
 ######################################################################################
 
+# there will be NaN values due to missing data in fielding layman file
+# and due to zero divide for OPS calulation.  there are 226 total records and data
+# shows these player have a total of 256 at bats.  Not relevent enough to try to fix
+df_nan = nans_df(dfbatting_player_stats)
+print(df_nan.info())
+print(dfbatting_player_stats.info())
+dfab = df_nan['AB']
+print('Sum of AB where there are NaN values ----------------------------------------')
+print(sum(dfab))
+# drop NaN values
+dfbatting_player_stats = dfbatting_player_stats.dropna(axis=0,how='any')
+print(dfbatting_player_stats)
+print(dfbatting_player_stats.info())
+
 success = save_stats_file(path,'dfbatting_player_stats.csv', dfbatting_player_stats)
+
 print(success)
