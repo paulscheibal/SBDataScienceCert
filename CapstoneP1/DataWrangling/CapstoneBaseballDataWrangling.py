@@ -28,12 +28,19 @@ path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
 hitsfile = 'Batting.csv'
 peoplefile = 'People.csv'
 teamfile = 'Teams.csv'
+fieldingfile = 'Fielding.csv'
+positioncatfile = 'Position_Categories.csv'
+fieldingfile = 'Fielding.csv'
 # file where validation against fangraphs will reside
 fangraphsfile = 'fangraphs.csv'
 
-MIN_AT_BATS = 100
+MIN_AT_BATS = 0
 START_YEAR = 1954
+END_YEAR = 2017
 START_DATE = datetime.strptime(str(START_YEAR)+'-01-01','%Y-%m-%d')
+END_DATE = datetime.strptime(str(END_YEAR)+'-01-01','%Y-%m-%d')
+
+dict_poscat = {'OF':'Outfield','SS':'Infield','1B':'Infield','2B':'Infield','3B':'Infield','P':'Pitcher','C':'Catcher'}
 
 # this function will provide a data frame with at least one NaN value in a column for each row.  
 # it excludes any row with all non NaN values.
@@ -41,18 +48,19 @@ nans_df = lambda df: df.loc[df.isnull().any(axis=1)]
 
 # checks to see if validation file exists, if not it reads data from fangraphs otherwise uses file that already exists.
 # if fangraphs API is called it writes the validation file for later use.  takes a long time for API call.
-def get_fangraphs_data(startyear, endyear, force_API):
-    fgf = path + fangraphsfile
-    if force_API == True:
+def get_fangraphs_data(path, fn, startyear, endyear, force_API):
+    fgf = path + fn
+    if (force_API == True) or (not os.path.exists(fgf)):
         data = batting_stats(startyear,endyear)
         export_csv = data.to_csv(fgf, index=None, header=True)
     else:
-        if os.path.exists(fgf):
-            data = pd.read_csv(fgf)
-        else:
-            data = batting_stats(startyear,endyear)
-            export_csv = data.to_csv(fgf, index=None, header=True)
+        data = pd.read_csv(fgf)
     return data
+
+def save_stats_file(path, fn, df):
+    stf = path + fn
+    df.to_csv(stf, index=None, header=True)
+    return True
 
 # function to take a baseball dataframe by yearID, playerID and AB and return the average number of at bats 
 # for a player during their lifetime and total number of year the player by played in major leagues
@@ -72,6 +80,7 @@ def avg_yearly_AB(df):
 
 # function to take a year of data and put it in format to do comparisons with layman data
 def fangraphs_wrangle(dffangraphs):
+    print(dffangraphs.index)
     dffangraphs = data[['Name','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']]
     convert_dict = {
                  'G':np.int64,
@@ -123,9 +132,10 @@ def validate_batting_data(dffangraphs, dfhits):
 
 ######################################################################################
 #
-#   Data Sources : batting, players and teams
+#   Data Sources : batting
 #
 ######################################################################################
+    
 print('\n')
 print('Data Sources Initial Assessment BEGIN==========================================')
 print('\n')
@@ -138,13 +148,43 @@ dfhits_ops = dfhits.loc[:, ['playerID','yearID','teamID','G','AB','H','2B','3B',
 print(dfhits_ops.head(20))
 print(dfhits_ops.info())
 
-# read in players (people) csv file
+######################################################################################
+#
+#   Data Sources : players, fielding, position category
+#
+######################################################################################
+
+# read fielding file to get position played.  A player could have played many positions.  
+# going to take the position where fielder played the most games.  
+fieldingf = path + fieldingfile
+dffielding = pd.read_csv(fieldingf)
+dffielding_ops = dffielding.loc[:, ['playerID','POS', 'G']]
+dffielding_ops = dffielding_ops.groupby(by=['playerID','POS']).sum().sort_values(['playerID','G','POS'],ascending=[True,False,True])
+dffielding_ops = dffielding_ops.reset_index()
+dffielding_primary_position = dffielding_ops.groupby(by=['playerID']).first()
+dffielding_primary_position = dffielding_primary_position.reset_index()
+
+# map the position played most to the position category (Outfield, Infield, Pitcher, Catcher)
+# then drop the 'G' (games) column as it is no longer needed
+dffielding_primary_position['POS_Cat'] = dffielding_primary_position['POS'].map(dict_poscat)
+dffielding_primary_position = dffielding_primary_position.drop('G',axis=1)
+print(dffielding_primary_position)
+
+# read in player information and 
+# merge fielding records with the player records and set to dfplayer_ops
 playersf = path + peoplefile
 dfplayers = pd.read_csv(playersf)
 dfplayers = dfplayers.reset_index(drop=True)
 dfplayers_ops = dfplayers.loc[:,['playerID','birthYear','birthMonth','birthDay','nameFirst','nameLast','debut','finalGame']]
+dfplayers_ops = pd.merge(dfplayers_ops, dffielding_primary_position, on='playerID')
 print(dfplayers_ops.head(20))
 print(dfplayers_ops.info())
+
+######################################################################################
+#
+#   Data Sources : teams
+#
+######################################################################################
 
 # read in teams csv file
 teamsf = path + teamfile
@@ -329,6 +369,10 @@ print('Before joining batting to players----------------------------------------
 print('\n')
 print(dfhits_ops_final.info())
 dfbatting_player_stats = pd.merge(dfhits_ops_final,dfplayers_ops_final,on='playerID')
+# no need to have pitchers in batters information.  We are looking at position players only
+dfpitchers = dfbatting_player_stats[dfbatting_player_stats['POS_Cat'] == 'Pitcher']
+dfbatting_player_stats = dfbatting_player_stats[dfbatting_player_stats['POS_Cat'] != 'Pitcher']
+
 print('After joining batting to players----------------------------------------------')
 print('\n')
 print(dfbatting_player_stats.head(20))
@@ -341,6 +385,17 @@ print('\n')
 sthits = dfhits_ops_final['playerID'] 
 stplayers = dfplayers_ops_final['playerID']
 results = list(set(sthits).difference(set(stplayers)))
+print(results)
+
+# there are a handfull of players who were pinch hitters in the 1950's. They did not have a position
+# and only played for a very limited time.  ommitting them
+dfhits_ops_final = dfhits_ops_final[~dfhits_ops_final['playerID'].isin(results)]
+
+print('Verifying Referential Integrity to players II-------------------------------')
+print('\n')
+sthits1 = dfhits_ops_final['playerID'] 
+sthits2 = dfbatting_player_stats['playerID']
+results = list(set(sthits1).difference(set(sthits2)))
 print(results)
 
 #print('Joining batting to teams -----------------------------------------------------')
@@ -449,8 +504,10 @@ print('\n')
 print('Independent Validation START===================================================')
 print('\n')
 #specify startyear to the endyear of the data you want returned
-data = get_fangraphs_data(2017,2017,force_API=False)
+data = get_fangraphs_data(path, 'fangraphs_2017.csv', 2017,2017,force_API=False)
 dffangraphs_2017 = fangraphs_wrangle(data)
+dfpitcherlst = list(dfpitchers['playername'])
+dffangraphs_2017 = dffangraphs_2017[~dffangraphs_2017['playername'].isin(dfpitcherlst)]
 
 print('Fangraph data for 2017 with minimum at bats of MIN_AT_BATS --------------------')
 print('\n')
@@ -475,15 +532,17 @@ result = (dfhits_diff == 0).all()
 print('Results of differences between batting and fangraphs...one disrepancie and printed below.  should be OK')
 print('\n')
 print(result)
-print('Manual Margot OBP between batting and fangraphs is rounding error ------------')
-print(dfhits_diff[dfhits_diff['G_diff'] != 0])
-print(dfhits_diff[dfhits_diff['OBP_diff'] != 0][['playername','OBP_diff']])
-print(dfhits_diff.info())
-print(dfhits_val[dfhits_val['playername'] == 'Manuel Margot'][['playername','OBP_x','OBP_y', 'OPS_x','OPS_y']])
-
-print(dfbatting_player_stats)
-print(dfhits_diff)
+result = result.reset_index()
+result.columns = ['colnm','result']
+result = result.drop(0)
+result = list(result[result['result'] == False]['colnm'])
 print(result)
+for colnm in result:
+    print(dfhits_diff[dfhits_diff[colnm] != 0])
+
+print(dffangraphs_2017[dffangraphs_2017['playername'] == 'Daniel Robertson'])
+print(dfhits_2017[dfhits_2017['playername'] == 'Daniel Robertson'])
+print(dfhits_2017[dfhits_2017['playername'] == 'Dan Robertson'])
 # determine values which will not join due to name differences between fangraphs and layman
 print('Players in Batters but not in Fangraphs --------------------------------------')
 print('\n')
@@ -529,3 +588,13 @@ print('\n')
 x = dfbatting_player_stats[dfbatting_player_stats['playerID'] == 'adcocjo01']['AB'].sum()
 y = dfbatting_player_stats[dfbatting_player_stats['playerID'] == 'adcocjo01']['AB'].count()
 print(x,y,x/y)
+
+
+######################################################################################
+#
+#   save dfbatting_player_stats to csv file 
+#
+######################################################################################
+
+success = save_stats_file(path,'dfbatting_player_stats.csv', dfbatting_player_stats)
+print(success)
