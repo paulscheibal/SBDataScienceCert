@@ -15,10 +15,6 @@ END_DATE = datetime.strptime(str(END_YEAR)+'-12-31','%Y-%m-%d')
 
 # set path for reading Lahman baseball statistics
 path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
-hitsfile = 'Batting.csv'
-peoplefile = 'People.csv'
-teamfile = 'Teams.csv'
-fieldingfile = 'Fielding.csv'
 
 #routine that calculates OPS, OBP and SLG and returns them to calling routine.
 def calc_ops(df):    
@@ -48,6 +44,9 @@ dfbatting_playercnt = df.groupby(['yearID']).count()['age']
 dfplayers_unique = df.playerID.unique()
 print('\n\n')
 print('Total Population of Players from 1954 to 2018: ' + str(len(dfplayers_unique)))
+print('\n')
+print('Total # of Observations (yearly player statistics) 1954 to 2018: ' + str( len(dfbatting_player_stats) ) )
+print('\n')
 
 # set size information and layout for subplots
 fig, axx = plt.subplots(nrows=1, ncols=2,)
@@ -57,7 +56,7 @@ dfplot1 = df[['playerID','POS']].drop_duplicates().groupby('POS').count()
 dfplot1 = dfplot1.reset_index()
 dfplot1.columns = ['Position','PositionCounts']
 ax = dfplot1.plot(kind='pie',y='PositionCounts',labels=dfplot1['Position'],ax=axx[0],startangle=90,autopct='%1.1f%%',colors=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
-ax.set_title('Player Population by Positon \n', weight='bold', size=14)
+ax.set_title('Player Population by Position \n', weight='bold', size=14)
 ax.set_ylabel("% of Players", labelpad=10, weight='bold', size=10)
 ax.legend(bbox_to_anchor=(1, 1))
 
@@ -66,8 +65,8 @@ dfplot2 = df[['playerID','POS_Cat']].drop_duplicates().groupby('POS_Cat').count(
 dfplot2 = dfplot2.reset_index()
 dfplot2.columns = ['PositionCat','PositionCatCounts']
 ax2 = dfplot2.plot(kind='pie',y='PositionCatCounts',labels=dfplot2['PositionCat'],ax=axx[1],startangle=90,autopct='%1.1f%%',colors=['#ff9999','#66b3ff','#99ff99'])
-ax2.set_title('Player Population by Positon Category \n', weight='bold', size=14)
-ax2.set_ylabel("% of Players", labelpad=10, weight='bold', size=10)
+ax2.set_title('Player Population by Position Category \n', weight='bold', size=14)
+ax2.set_ylabel(None, labelpad=10, weight='bold', size=10)
 ax2.legend(bbox_to_anchor=(1, 1))
 plt.show()
 print('\n\n')
@@ -110,7 +109,7 @@ dfplot = df[['decade','POS','playerID']].groupby(['decade','POS']).count()
 dfplot = dfplot.unstack()
 dfplot.columns = dfplot.columns.droplevel()
 dfplot.columns.POS = None
-ax = dfplot.plot(kind='bar',stacked=True,figsize=(15,7),width=0.65,colors=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
+ax = dfplot.plot(kind='bar',stacked=True,figsize=(15,7),width=0.65,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
 ax.set_title('Player Counts by Decade & Position \nfrom 1954 to 2018 \n', weight='bold', size=14)
 ax.set_xlabel("Decade Played", labelpad=10, weight='bold', size=10)
 ax.set_ylabel("Number of Players", labelpad=10, weight='bold', size=10)
@@ -122,7 +121,7 @@ dfplot = df[['decade','POS_Cat','playerID']].groupby(['decade','POS_Cat']).count
 dfplot = dfplot.unstack()
 dfplot.columns = dfplot.columns.droplevel()
 dfplot.columns.POS_Cat = None
-ax = dfplot.plot(kind='bar',stacked=True,figsize=(15,7),width=0.65,colors=['#ff9999','#66b3ff','#99ff99'])
+ax = dfplot.plot(kind='bar',stacked=True,figsize=(15,7),width=0.65,color=['#ff9999','#66b3ff','#99ff99'])
 ax.set_title('Player Counts by Decade & Category \nfrom 1954 to 2018 \n', weight='bold', size=14)
 ax.set_xlabel("Decaded Played", labelpad=10, weight='bold', size=10)
 ax.set_ylabel("Number of Players", labelpad=10, weight='bold', size=10)
@@ -156,7 +155,7 @@ plt.show()
 print('\n\n')
 
 dfplot = df[df['POS'] == 'C']
-dfplot = dfplot[(dfcatchers['OPS'] < 1.5) & (dfcatchers['OPS'] > .0)][['OPS','age']]
+dfplot = dfplot[(dfplot['OPS'] < 1.5) & (dfplot['OPS'] > .0)][['OPS','age']]
 ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(15,7),color='#86bf91')
 ax.set_title('Player Age (Catchers only) vs. OPS \n',weight='bold', size=14)
 ax.set_xlabel("OPS", labelpad=10, weight='bold', size=10)
@@ -172,7 +171,7 @@ dfplot = dfplot.unstack()
 dfplot.columns = dfplot.columns.droplevel()
 dfplot.columns.POS = None
 dfplot = dfplot.reset_index()
-ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=3,colors=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
+ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=3,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
 ax.set_title('OPS by Position Trend over Time\n',weight='bold', size=14)
 ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
 ax.set_ylabel("OPS", labelpad=10, weight='bold', size=10)
@@ -195,7 +194,7 @@ dfplot = dfplot.unstack()
 dfplot.columns = dfplot.columns.droplevel()
 dfplot.columns.POS = None
 dfplot = dfplot.reset_index()
-ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=4,colors=['#ff9999','#66b3ff','#99ff99'])
+ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
 ax.set_title('OPS by Position Category Trend over Time\n',weight='bold', size=14)
 ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
 ax.set_ylabel("OPS", labelpad=10, weight='bold', size=10)
@@ -218,7 +217,7 @@ dfplot = dfplot.unstack()
 dfplot.columns = dfplot.columns.droplevel()
 dfplot.columns.POS = None
 dfplot = dfplot.reset_index()
-ax = dfplot.plot(kind='line',x='age',figsize=(15,8),linewidth=4,colors=['#ff9999','#66b3ff','#99ff99'])
+ax = dfplot.plot(kind='line',x='age',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
 ax.set_title('OPS by Position Category by Age\nPlayers Played 12 or More Years\n',weight='bold', size=14)
 ax.set_xlabel("Age", labelpad=10, weight='bold', size=10)
 ax.set_ylabel("OPS", labelpad=10, weight='bold', size=10)
@@ -241,7 +240,7 @@ dfplot = dfplot.unstack()
 dfplot.columns = dfplot.columns.droplevel()
 dfplot.columns.POS = None
 dfplot = dfplot.reset_index()
-ax = dfplot.plot(kind='line',x='age',figsize=(15,8),linewidth=4,colors=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
+ax = dfplot.plot(kind='line',x='age',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
 ax.set_title('OPS by Position by Age\nPlayers Played 12 or More Years\n',weight='bold', size=14)
 ax.set_xlabel("Age", labelpad=10, weight='bold', size=10)
 ax.set_ylabel("OPS", labelpad=10, weight='bold', size=10)
