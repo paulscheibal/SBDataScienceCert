@@ -36,7 +36,7 @@ fangraphsfile = 'fangraphs.csv'
 
 MIN_AT_BATS = 0
 START_YEAR = 1954
-END_YEAR = 2017
+END_YEAR = 2018
 START_DATE = datetime.strptime(str(START_YEAR)+'-01-01','%Y-%m-%d')
 END_DATE = datetime.strptime(str(END_YEAR)+'-01-01','%Y-%m-%d')
 
@@ -45,6 +45,15 @@ dict_poscat = {'OF':'Outfield','SS':'Infield','1B':'Infield','2B':'Infield','3B'
 # this function will provide a data frame with at least one NaN value in a column for each row.  
 # it excludes any row with all non NaN values.
 nans_df = lambda df: df.loc[df.isnull().any(axis=1)]
+
+#routine that calculates OPS, OBP and SLG and returns them to calling routine.
+def calc_ops(df):    
+    df['1B'] = df['H'] - ( df['2B'] + df['3B'] + df['HR'] )  
+    df['TB'] =  df['1B'] + (df['2B'] * 2) + (df['3B'] * 3) + (df['HR'] * 4)                             
+    df['SLG'] = df['TB'] / df['AB']
+    df['OBP'] = ( df['H'] + df['BB'] + df['HBP'] ) / ( df['AB'] + df['BB'] + df['SF'] + df['HBP'] )                 
+    df['OPS'] = df['OBP'] + df['SLG'] 
+    return  df
 
 # checks to see if validation file exists, if not it reads data from fangraphs otherwise uses file that already exists.
 # if fangraphs API is called it writes the validation file for later use.  takes a long time for API call.
@@ -378,13 +387,18 @@ print('\n')
 print(dfhits_ops_final.info())
 stbatting = list(dfhits_ops_final['playerID'])
 stplayers = list(dfplayers_ops_final['playerID'])
-result = set(stbatting).difference(set(stplayers))
+results = set(stbatting).difference(set(stplayers))
 print(results)
 
 dfbatting_player_stats = pd.merge(dfhits_ops_final,dfplayers_ops_final,on='playerID')
 # no need to have pitchers in batters information.  We are looking at position players only
+# dfpitchers wil lbe used later on for getting rid of fangraphs pitchers
 dfpitchers = dfbatting_player_stats[dfbatting_player_stats['POS_Cat'] == 'Pitcher']
 dfbatting_player_stats = dfbatting_player_stats[dfbatting_player_stats['POS_Cat'] != 'Pitcher']
+
+# there are a handfull of players who were pinch hitters in the 1950's. They did not have a position
+# and only played for a very limited time.  ommitting them
+#dfbatting_player_stats = dfbatting_player_stats[~dfbatting_player_stats['playerID'].isin(results)]
 
 print('After joining batting to players----------------------------------------------')
 print('\n')
@@ -400,20 +414,6 @@ stplayers = dfplayers_ops_final['playerID']
 results = list(set(sthits).difference(set(stplayers)))
 print(results)
 
-#print('Joining batting to teams -----------------------------------------------------')
-#print(dfhits_ops_final.info())
-#dfhits_teams_merged = pd.merge(dfhits_ops_final,dfteams_ops_final,on=['yearID','teamID'])
-#print(dfhits_teams_merged.head(20))
-#print(dfhits_teams_merged.info())
-#
-## set of (yearID,teamID) from batting and teams.  Do difference of batting(yearID,teamID) and team(yearID,teamID)
-## should get null set
-#print('Verifying Referential Integrity to teams -------------------------------------')
-#sthits = dfhits_ops_final.loc[:,['yearID','teamID']] 
-#stteams = dfteams_ops_final.loc[:,['yearID','teamID']]
-#results = list(set(sthits).difference(set(stteams)))
-#print(results)
-
 # validation of primary key for people (players) for joins to batting entity
 print('Verifying primary keys of players and teams ----------------------------------')
 print('\n')
@@ -426,11 +426,6 @@ teams1 = dfteams_ops_final[['yearID','teamID']].drop_duplicates()
 teams2 = dfteams_ops_final[['yearID','teamID']]
 print(teams1.equals(teams2))
 
-## all tables joined together show no loss or addition of rows to batting.  We are good to go
-#print('Joining all three tables together--------------------------------------------')
-#dfhits = pd.merge(dfhits_players,dfteams_ops_final,on=['yearID','teamID'])
-#print(dfhits.head(20))
-#print(dfhits.info())
 print('Referential Integrity Check END================================================')
 print('\n')
 
@@ -451,28 +446,30 @@ print('\n')
 dfstats = avg_yearly_AB(dfbatting_player_stats.loc[:,['yearID','playerID','AB']])
 dfbatting_player_stats = pd.merge(dfbatting_player_stats , dfstats, on='playerID')
 
-dfbatting_player_stats['1B'] = dfbatting_player_stats['H'] - (
-                                                               dfbatting_player_stats['2B'] +
-                                                               dfbatting_player_stats['3B'] +
-                                                               dfbatting_player_stats['HR']
-                                                             )
+#dfbatting_player_stats['1B'] = dfbatting_player_stats['H'] - (
+#                                                               dfbatting_player_stats['2B'] +
+#                                                               dfbatting_player_stats['3B'] +
+#                                                               dfbatting_player_stats['HR']
+#                                                             )
+#
+#dfbatting_player_stats['TB'] =  dfbatting_player_stats['1B'] + (dfbatting_player_stats['2B'] * 2) + (dfbatting_player_stats['3B'] * 3) + (dfbatting_player_stats['HR'] * 4) 
+#                               
+#dfbatting_player_stats['SLG'] = dfbatting_player_stats['TB'] / dfbatting_player_stats['AB']
+#
+#dfbatting_player_stats['OBP'] = ((
+#                                 dfbatting_player_stats['H'] + 
+#                                 dfbatting_player_stats['BB'] +
+#                                 dfbatting_player_stats['HBP'] 
+#                                ) / (
+#                                     dfbatting_player_stats['AB'] + 
+#                                     dfbatting_player_stats['BB'] +
+#                                     dfbatting_player_stats['SF'] +
+#                                     dfbatting_player_stats['HBP'] 
+#                                    ))
+#                    
+#dfbatting_player_stats['OPS'] = dfbatting_player_stats['OBP'] + dfbatting_player_stats['SLG'] 
 
-dfbatting_player_stats['TB'] =  dfbatting_player_stats['1B'] + (dfbatting_player_stats['2B'] * 2) + (dfbatting_player_stats['3B'] * 3) + (dfbatting_player_stats['HR'] * 4) 
-                               
-dfbatting_player_stats['SLG'] = dfbatting_player_stats['TB'] / dfbatting_player_stats['AB']
-
-dfbatting_player_stats['OBP'] = ((
-                                 dfbatting_player_stats['H'] + 
-                                 dfbatting_player_stats['BB'] +
-                                 dfbatting_player_stats['HBP'] 
-                                ) / (
-                                     dfbatting_player_stats['AB'] + 
-                                     dfbatting_player_stats['BB'] +
-                                     dfbatting_player_stats['SF'] +
-                                     dfbatting_player_stats['HBP'] 
-                                    ))
-                    
-dfbatting_player_stats['OPS'] = dfbatting_player_stats['OBP'] + dfbatting_player_stats['SLG'] 
+dfbatting_player_stats = calc_ops(dfbatting_player_stats)
 
 # could have rounded above in one statement but rounding before being used in calculations was causing
 # rounding errors and data was off sightly.  Doing rounding after fixed this.
