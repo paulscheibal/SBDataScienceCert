@@ -5,11 +5,14 @@ from pybaseball import batting_stats
 import os.path
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+import matplotlib as mpl
+import pylab as plb
 import seaborn as sns
 
 MIN_AT_BATS = 0
 START_YEAR = 1954
 END_YEAR = 2018
+FSHZ = 17
 START_DATE = datetime.strptime(str(START_YEAR)+'-01-01','%Y-%m-%d')
 END_DATE = datetime.strptime(str(END_YEAR)+'-12-31','%Y-%m-%d')
  
@@ -48,52 +51,48 @@ dfbig = pd.read_csv(bigcontractsf)
 #
 dfplot = dfbig[['Player','ConNumYears','ConDollars']].sort_values('Player')
 dfplot.columns = ['Player','Contract Years','Contract Value']
-ax = dfplot.plot(kind='bar',x='Player',y='Contract Years', color='#86bf91',width=0.55,figsize=(17,7))
+ax = dfplot.plot(kind='bar',x='Player',y='Contract Years', color='#86bf91',width=0.55,figsize=(FSHZ,7))
 ax.set_title('Big MLB Contracts (Contract Years)\n', weight='bold', size=14)
-ax.set_xlabel("Player", labelpad=10, weight='bold', size=14)
-ax.set_ylabel("Years of Contract", labelpad=10, weight='bold', size=14)
+ax.set_xlabel("Player", labelpad=10, size=14)
+ax.set_ylabel("Years of Contract", labelpad=10, size=14)
 for tick in ax.get_xticklabels():
     tick.set_fontsize(12)
-    tick.set_weight('bold')
 for tick in ax.get_yticklabels():
     tick.set_fontsize(12)
-    tick.set_weight('bold')
 plt.xticks(rotation=45)
 plt.show()
 print('\n\n')
+
 #
 # plot contracted dollars (in millions) by player
 #
 dfplot = dfbig[['Player','ConNumYears','ConDollars']].sort_values('Player')
 dfplot.columns = ['Player','Contract Years','Contract Value']
-ax = dfplot.plot(kind='bar',x='Player',y='Contract Value', color='#86bf91',width=0.55,figsize=(17,7))
+ax = dfplot.plot(kind='bar',x='Player',y='Contract Value', color='#86bf91',width=0.55,figsize=(FSHZ,7))
 ax.set_title('Big MLB Contracts (Contract Value)\n', weight='bold', size=14)
-ax.set_xlabel("Player", labelpad=10, weight='bold', size=14)
-ax.set_ylabel("Contract Value (in millions)", labelpad=12, weight='bold', size=14)
+ax.set_xlabel("Player", labelpad=10, size=14)
+ax.set_ylabel("Contract Value (in millions)", labelpad=12, size=14)
 for tick in ax.get_xticklabels():
     tick.set_fontsize(12)
-    tick.set_weight('bold')
 for tick in ax.get_yticklabels():
     tick.set_fontsize(12)
-    tick.set_weight('bold')
 plt.xticks(rotation=45)
 plt.show()
 print('\n\n')
+
 #
 # plot contract starting age, ending age and years in league after contract ends
 #
 dfplot = dfbig[['Player','DebutAge','ConAgeStart','ConAgeEnd']].sort_values('Player')
 dfplot.columns = ['Player','Debut Age','Contract Start Age','Contract End Age']
-ax = dfplot.plot(kind='bar',x='Player',y=['Debut Age','Contract Start Age','Contract End Age'], color=['#66aa99','#ff9999','#66b3ff'],width=0.55,figsize=(17,7))
+ax = dfplot.plot(kind='bar',x='Player',y=['Debut Age','Contract Start Age','Contract End Age'], color=['#66aa99','#ff9999','#66b3ff'],width=0.55,figsize=(FSHZ,7))
 ax.set_title('Big MLB Contracts Age\n', weight='bold', size=14)
-ax.set_xlabel("Player", labelpad=10, weight='bold', size=14)
-ax.set_ylabel("Age", labelpad=12, weight='bold', size=14)
+ax.set_xlabel("Player", labelpad=10,size=14)
+ax.set_ylabel("Age", labelpad=12, size=14)
 for tick in ax.get_xticklabels():
     tick.set_fontsize(12)
-    tick.set_weight('bold')
 for tick in ax.get_yticklabels():
     tick.set_fontsize(12)
-    tick.set_weight('bold')
 plt.xticks(rotation=45)
 plt.show()
 print('\n\n')
@@ -122,15 +121,16 @@ print('\n')
 ####################################################################################################################
 #
 # set size information and layout for subplots
+mpl.rcParams['font.size'] = 14.0
 fig, axx = plt.subplots(nrows=1, ncols=2,)
-fig.set_size_inches(15,7)
+fig.set_size_inches(FSHZ,7)
 # players by position in population
 dfplot1 = df[['playerID','POS']].drop_duplicates().groupby('POS').count()
 dfplot1 = dfplot1.reset_index()
 dfplot1.columns = ['Position','PositionCounts']
 ax = dfplot1.plot(kind='pie',y='PositionCounts',labels=dfplot1['Position'],ax=axx[0],startangle=90,autopct='%1.1f%%',colors=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
 ax.set_title('Player Population by Position \n', weight='bold', size=14)
-ax.set_ylabel("% of Players", labelpad=10, weight='bold', size=10)
+ax.set_ylabel("% of Players", labelpad=10, fontsize='large')
 ax.legend(bbox_to_anchor=(1, 1))
 
 # players by position category
@@ -139,33 +139,26 @@ dfplot2 = dfplot2.reset_index()
 dfplot2.columns = ['PositionCat','PositionCatCounts']
 ax2 = dfplot2.plot(kind='pie',y='PositionCatCounts',labels=dfplot2['PositionCat'],ax=axx[1],startangle=90,autopct='%1.1f%%',colors=['#ff9999','#66b3ff','#99ff99'])
 ax2.set_title('Player Population by Position Category \n', weight='bold', size=14)
-ax2.set_ylabel(None, labelpad=10, weight='bold', size=10)
+ax2.set_ylabel(None, labelpad=10,  fontsize='large')
 ax2.legend(bbox_to_anchor=(1, 1))
 plt.show()
 print('\n\n')
 
-## Violin plot
-#dfplot = df[['playerID','years_played']]
-#dfplot = dfplot.drop_duplicates()
-#plt.figure(figsize=(15, 10))
-#sns.set_style('whitegrid')
-#ax = sns.boxplot(y='years_played', data=dfplot, color='#86bf91')
-#ax.set_title('Violin Plot\nYears Played', weight='bold', size=14)
-#ax.set_ylabel("Years Played", labelpad=10, weight='bold', size=10)
-#plt.show()
-#print('\n\n')
-#
-#stop
+mpl.rcParams['font.size'] = 12.0
 
 # bar chart showing player counts by years played
 dfplot = df[['playerID','years_played']].drop_duplicates().groupby('years_played').count()
 dfplot = dfplot.reset_index()
 dfplot.columns = ['YearsPlayed','YearCounts']
-ax = dfplot.plot(kind='bar',x='YearsPlayed',y='YearCounts',color='#86bf91',width=0.55,figsize=(15,7))
-ax.set_title('Player Counts by Years Played \nfrom 1954 to 2018 \n', weight='bold', size=14)
-ax.set_xlabel("Years Played", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("Number of Players", labelpad=10, weight='bold', size=10)
+ax = dfplot.plot(kind='bar',x='YearsPlayed',y='YearCounts',color='#86bf91',width=0.55,figsize=(FSHZ,7))
+ax.set_title('Player Counts by Years Played \nfrom 1954 to 2018 \n',weight='bold',size=14)
+ax.set_xlabel("Years Played", labelpad=10, size=14)
+ax.set_ylabel("Number of Players", labelpad=10,size=14)
 ax.get_legend().remove()
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
 plt.show()
 print('\n\n')
 
@@ -180,11 +173,15 @@ print('\n\n')
 dfplot = df[['playerID','age']].groupby('age').count()
 dfplot = dfplot.reset_index()
 dfplot.columns = ['Age','Age Counts']
-ax = dfplot.plot(kind='bar',x='Age',y='Age Counts', color='#86bf91',width=0.55,figsize=(15,7))
-ax.set_title('Player Counts by Age\nfrom 1954 to 2018 \n', weight='bold', size=14)
-ax.set_xlabel("Age", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("Number of Playerse", labelpad=10, weight='bold', size=10)
+ax = dfplot.plot(kind='bar',x='Age',y='Age Counts', color='#86bf91',width=0.55,figsize=(FSHZ,7))
+ax.set_title('Player Counts by Age\nfrom 1954 to 2018 \n',weight='bold',size=14)
+ax.set_xlabel("Age", labelpad=10,size=14)
+ax.set_ylabel("Number of Playerse", labelpad=10,size=14)
 ax.get_legend().remove()
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
 plt.show()
 print('\n\n')
 
@@ -192,11 +189,15 @@ print('\n\n')
 dfplot = df[['decade','playerID']].groupby('decade').count()
 dfplot = dfplot.reset_index()
 dfplot.columns = ['Decade','Player Counts']
-ax = dfplot.plot(kind='bar',x='Decade',y='Player Counts',figsize=(15,7),width=0.65,color='#86bf91')
+ax = dfplot.plot(kind='bar',x='Decade',y='Player Counts',figsize=(FSHZ,7),width=0.65,color='#86bf91')
 ax.set_title('Player Counts by Decade \nfrom 1954 to 2018 \n', weight='bold', size=14)
-ax.set_xlabel("Decade Played", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("Number of Players", labelpad=10, weight='bold', size=10)
+ax.set_xlabel("Decade Played", labelpad=10, size=14)
+ax.set_ylabel("Number of Players", labelpad=10, size=14)
 ax.get_legend().remove()
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
 plt.xticks(rotation=45)
 plt.show()
 print('\n\n')
@@ -206,10 +207,14 @@ dfplot = df[['decade','POS','playerID']].groupby(['decade','POS']).count()
 dfplot = dfplot.unstack()
 dfplot.columns = dfplot.columns.droplevel()
 dfplot.columns.POS = None
-ax = dfplot.plot(kind='bar',stacked=True,figsize=(15,7),width=0.65,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
+ax = dfplot.plot(kind='bar',stacked=True,figsize=(FSHZ,7),width=0.65,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
 ax.set_title('Player Counts by Decade & Position \nfrom 1954 to 2018 \n', weight='bold', size=14)
-ax.set_xlabel("Decade Played", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("Number of Players", labelpad=10, weight='bold', size=10)
+ax.set_xlabel("Decade Played", labelpad=10, size=14)
+ax.set_ylabel("Number of Players", labelpad=10, size=14)
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
 plt.xticks(rotation=45)
 plt.show()
 print('\n\n')
@@ -219,13 +224,18 @@ dfplot = df[['decade','POS_Cat','playerID']].groupby(['decade','POS_Cat']).count
 dfplot = dfplot.unstack()
 dfplot.columns = dfplot.columns.droplevel()
 dfplot.columns.POS_Cat = None
-ax = dfplot.plot(kind='bar',stacked=True,figsize=(15,7),width=0.65,color=['#ff9999','#66b3ff','#99ff99'])
+ax = dfplot.plot(kind='bar',stacked=True,figsize=(FSHZ,7),width=0.65,color=['#ff9999','#66b3ff','#99ff99'])
 ax.set_title('Player Counts by Decade & Category \nfrom 1954 to 2018 \n', weight='bold', size=14)
-ax.set_xlabel("Decaded Played", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("Number of Players", labelpad=10, weight='bold', size=10)
+ax.set_xlabel("Decaded Played", labelpad=10, size=14)
+ax.set_ylabel("Number of Players", labelpad=10, size=14)
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
 plt.xticks(rotation=45)
 plt.show()
 print('\n\n')
+
 #
 ####################################################################################################################
 #
@@ -235,28 +245,40 @@ print('\n\n')
 #
 # Scatter plot looking for outliers OPS vs Age all players
 dfplot = df[['OPS','age']]
-ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(15,7),color='#86bf91')
+ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(FSHZ,7),color='#86bf91')
 ax.set_title('Outlier Analysis: Player Age vs. OPS \nAll Players', weight='bold', size=14)
-ax.set_xlabel("OPS", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("Age of Player", labelpad=10, weight='bold', size=10)
+ax.set_xlabel("OPS", labelpad=10, size=14)
+ax.set_ylabel("Age of Player", labelpad=10, size=14)
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
 plt.show()
 
 # Scatter plot for players playing for 12 or more years with at least 300 avg atbats by OPS vs Age
 dfplot = df[(df['years_played'] >= 12) & (df['OPS'] >= .4) & (df['OPS'] <= 1.5) & (df['avg_yrly_AB'] > 300)][['OPS','age']]
-ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(15,7),color='#86bf91')
+ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(FSHZ,7),color='#86bf91')
 ax.set_title('High Performers (300 AB or more) \nPlayer Played 12 or More Years \n', weight='bold', size=14)
-ax.set_xlabel("OPS", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("Age of Player", labelpad=10, weight='bold', size=10)
+ax.set_xlabel("OPS", labelpad=10, size=14)
+ax.set_ylabel("Age of Player", labelpad=10, size=14)
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
 
 # Scatter plot for all players OPS vs Years Played
 dfplot = df[(df['OPS'] < 1.5) & (df['OPS'] > 0)][['OPS','years_played']]
-ax = dfplot.plot(kind='scatter', x='OPS',y='years_played',figsize=(15,7),color='#86bf91')
+ax = dfplot.plot(kind='scatter', x='OPS',y='years_played',figsize=(FSHZ,7),color='#86bf91')
 ax.set_title('Years in League vs. OPS \nAll Players\n', weight='bold', size=14)
-ax.set_xlabel("OPS", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("Years in League", labelpad=10, weight='bold', size=10)
+ax.set_xlabel("OPS", labelpad=10, size=14)
+ax.set_ylabel("Years in League", labelpad=10, size=14)
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
 print('\n\n')
@@ -264,12 +286,17 @@ print('\n\n')
 # Scatter plot for catchers only by OPS vs Age
 dfplot = df[df['POS'] == 'C']
 dfplot = dfplot[(dfplot['OPS'] < 1.5) & (dfplot['OPS'] > .0)][['OPS','age']]
-ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(15,7),color='#86bf91')
+ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(FSHZ,7),color='#86bf91')
 ax.set_title('Player Age (Catchers only) vs. OPS \n',weight='bold', size=14)
-ax.set_xlabel("OPS", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("Catcher Age", labelpad=10, weight='bold', size=10)
+ax.set_xlabel("OPS", labelpad=10, size=14)
+ax.set_ylabel("Catcher Age", labelpad=10, size=14)
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
+
 #
 ####################################################################################################################
 #
@@ -286,10 +313,10 @@ dfplot = dfplot.unstack()
 dfplot.columns = dfplot.columns.droplevel()
 dfplot.columns.POS_Cat = None
 dfplot = dfplot.reset_index()
-ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
+ax = dfplot.plot(kind='line',x='yearID',figsize=(FSHZ,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
 ax.set_title('OPS by Position Category Trend over Time\nAll Players\n',weight='bold', size=14)
-ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("OPS", labelpad=10, weight='bold', size=10)
+ax.set_xlabel("Year", labelpad=10, size=14)
+ax.set_ylabel("OPS", labelpad=10, size=14)
 leg = plt.legend()
 # get the individual lines inside legend and set line width
 for line in leg.get_lines():
@@ -299,6 +326,7 @@ for text in leg.get_texts():
     text.set_fontsize('x-large')
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.yticks(np.arange(.550,.900,.050))
+plt.xticks(rotation=45)
 plt.show()
 
 # plot players by Position against OPS for all players
@@ -310,10 +338,10 @@ dfplot = dfplot.unstack()
 dfplot.columns = dfplot.columns.droplevel()
 dfplot.columns.POS = None
 dfplot = dfplot.reset_index()
-ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=3,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
+ax = dfplot.plot(kind='line',x='yearID',figsize=(FSHZ,8),linewidth=3,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
 ax.set_title('OPS by Position Trend over Time\nAll Players\n',weight='bold', size=14)
-ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("OPS", labelpad=10, weight='bold', size=10)
+ax.set_xlabel("Year", labelpad=10, size=14)
+ax.set_ylabel("OPS", labelpad=10, size=14)
 leg = plt.legend()
 # get the individual lines inside legend and set line width
 for line in leg.get_lines():
@@ -323,6 +351,7 @@ for text in leg.get_texts():
     text.set_fontsize('x-large')
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.yticks(np.arange(.550,.900,.050))
+plt.xticks(rotation=45)
 plt.show()
 
 # plot players against AVG, SLG and OBP by Position Category for all players
@@ -331,10 +360,10 @@ dfplot = dfplot.groupby(['yearID']).sum()
 dfplot = calc_ops(dfplot)
 dfplot = dfplot[['AVG','SLG','OBP']]
 dfplot = dfplot.reset_index()
-ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
+ax = dfplot.plot(kind='line',x='yearID',figsize=(FSHZ,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
 ax.set_title('AVG, SLG & OBP by Trend over Time\nAll Players\n',weight='bold', size=14)
-ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("OPS", labelpad=10, weight='bold', size=10)
+ax.set_xlabel("Year", labelpad=10, size=14)
+ax.set_ylabel("AVG, SLG & OBP", labelpad=10, size=14)
 leg = plt.legend()
 # get the individual lines inside legend and set line width
 for line in leg.get_lines():
@@ -343,6 +372,7 @@ for line in leg.get_lines():
 for text in leg.get_texts():
     text.set_fontsize('x-large')
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+plt.xticks(rotation=45)
 plt.show()
 
 ## plot players played 12 or more years against AVG, SLG and OBP by Position Category
@@ -351,7 +381,7 @@ plt.show()
 #dfplot = calc_ops(dfplot)
 #dfplot = dfplot[['AVG','SLG','OBP']]
 #dfplot = dfplot.reset_index()
-#ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
+#ax = dfplot.plot(kind='line',x='yearID',figsize=(FSHZ,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
 #ax.set_title('AVG, SLG & OBP by Trend over Time\nPlayers Played 12 or More Years\n',weight='bold', size=14)
 #ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
 #ax.set_ylabel("AVG, SLG & OBP", labelpad=10, weight='bold', size=10)
@@ -374,7 +404,7 @@ plt.show()
 #dfplot.columns = dfplot.columns.droplevel()
 #dfplot.columns.POS = None
 #dfplot = dfplot.reset_index()
-#ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
+#ax = dfplot.plot(kind='line',x='yearID',figsize=(FSHZ,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
 #ax.set_title('AVG over Time by Position\n All Players \n',weight='bold', size=14)
 #ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
 #ax.set_ylabel("AVG", labelpad=10, weight='bold', size=10)
@@ -397,7 +427,7 @@ plt.show()
 #dfplot.columns = dfplot.columns.droplevel()
 #dfplot.columns.POS = None
 #dfplot = dfplot.reset_index()
-#ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
+#ax = dfplot.plot(kind='line',x='yearID',figsize=(FSHZ,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
 #ax.set_title('SLG over Time by Position\n All Players \n',weight='bold', size=14)
 #ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
 #ax.set_ylabel("SLG", labelpad=10, weight='bold', size=10)
@@ -433,7 +463,6 @@ plt.show()
 #    text.set_fontsize('x-large') 
 #ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 #plt.show()
-
 #
 ####################################################################################################################
 #
@@ -452,8 +481,8 @@ dfplot.columns.POS = None
 dfplot = dfplot.reset_index()
 ax = dfplot.plot(kind='line',x='age',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
 ax.set_title('OPS by Position Category by Age\nPlayers Played 12 or More Years\n',weight='bold', size=14)
-ax.set_xlabel("Age", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("OPS", labelpad=10, weight='bold', size=10)
+ax.set_xlabel("Age", labelpad=10, size=14)
+ax.set_ylabel("OPS", labelpad=10, size=14)
 leg = plt.legend()
 # get the individual lines inside legend and set line width
 for line in leg.get_lines():
@@ -476,8 +505,8 @@ dfplot.columns.POS = None
 dfplot = dfplot.reset_index()
 ax = dfplot.plot(kind='line',x='age',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
 ax.set_title('OPS by Position by Age\nPlayers Played 12 or More Years\n',weight='bold', size=14)
-ax.set_xlabel("Age", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("OPS", labelpad=10, weight='bold', size=10)
+ax.set_xlabel("Age", labelpad=10, size=14)
+ax.set_ylabel("OPS", labelpad=10, size=14)
 leg = plt.legend()
 # get the individual lines inside legend and set line width
 for line in leg.get_lines():
