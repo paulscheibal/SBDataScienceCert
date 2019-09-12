@@ -23,6 +23,7 @@ def calc_ops(df):
     df['SLG'] = df['TB'] / df['AB']
     df['OBP'] = ( df['H'] + df['BB'] + df['HBP'] ) / ( df['AB'] + df['BB'] + df['SF'] + df['HBP'] )                 
     df['OPS'] = df['OBP'] + df['SLG'] 
+    df['AVG'] = df['H'] / df['AB']
     return  df
 
 battingf = path + 'dfbatting_player_stats.csv'
@@ -47,7 +48,13 @@ print('Total Population of Players from 1954 to 2018: ' + str(len(dfplayers_uniq
 print('\n')
 print('Total # of Observations (yearly player statistics) 1954 to 2018: ' + str( len(dfbatting_player_stats) ) )
 print('\n')
-
+#
+####################################################################################################################
+#
+#  PIE charts for population by position and position category
+#
+####################################################################################################################
+#
 # set size information and layout for subplots
 fig, axx = plt.subplots(nrows=1, ncols=2,)
 fig.set_size_inches(15,7)
@@ -70,7 +77,14 @@ ax2.set_ylabel(None, labelpad=10, weight='bold', size=10)
 ax2.legend(bbox_to_anchor=(1, 1))
 plt.show()
 print('\n\n')
-
+#
+####################################################################################################################
+#
+#  Observation charts looking at all batter statistics per year by years played, age, by year
+#
+####################################################################################################################
+#
+# bar chart showing player counts by age
 dfplot = df[['playerID','age']].groupby('age').count()
 dfplot = dfplot.reset_index()
 dfplot.columns = ['Age','Age Counts']
@@ -82,6 +96,7 @@ ax.get_legend().remove()
 plt.show()
 print('\n\n')
 
+# bar chart showing player counts by years played
 dfplot = df[['playerID','years_played']].drop_duplicates().groupby('years_played').count()
 dfplot = dfplot.reset_index()
 dfplot.columns = ['YearsPlayed','YearCounts']
@@ -93,6 +108,7 @@ ax.get_legend().remove()
 plt.show()
 print('\n\n')
 
+# bar chart showing player counts by year
 dfplot = df[['decade','playerID']].groupby('decade').count()
 dfplot = dfplot.reset_index()
 dfplot.columns = ['Decade','Player Counts']
@@ -105,6 +121,7 @@ plt.xticks(rotation=45)
 plt.show()
 print('\n\n')
 
+# bar chart showing player counts stacked by Position by year
 dfplot = df[['decade','POS','playerID']].groupby(['decade','POS']).count()
 dfplot = dfplot.unstack()
 dfplot.columns = dfplot.columns.droplevel()
@@ -117,6 +134,7 @@ plt.xticks(rotation=45)
 plt.show()
 print('\n\n')
 
+# bar chart showing player counts stacked by Position Category by year
 dfplot = df[['decade','POS_Cat','playerID']].groupby(['decade','POS_Cat']).count()
 dfplot = dfplot.unstack()
 dfplot.columns = dfplot.columns.droplevel()
@@ -128,15 +146,23 @@ ax.set_ylabel("Number of Players", labelpad=10, weight='bold', size=10)
 plt.xticks(rotation=45)
 plt.show()
 print('\n\n')
-
+#
+####################################################################################################################
+#
+#  Scatter plots looking for trend between OPS and age as well as years played
+#
+####################################################################################################################
+#
+# Scatter plot looking for outliers OPS vs Age all players
 dfplot = df[['OPS','age']]
 ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(15,7),color='#86bf91')
-ax.set_title('Outlier Analysis: Player Age vs. OPS \n', weight='bold', size=14)
+ax.set_title('Outlier Analysis: Player Age vs. OPS \nAll Players', weight='bold', size=14)
 ax.set_xlabel("OPS", labelpad=10, weight='bold', size=10)
 ax.set_ylabel("Age of Player", labelpad=10, weight='bold', size=10)
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
 
+# Scatter plot for players playing for 12 or more years with at least 300 avg atbats by OPS vs Age
 dfplot = df[(df['years_played'] >= 12) & (df['OPS'] >= .4) & (df['OPS'] <= 1.5) & (df['avg_yrly_AB'] > 300)][['OPS','age']]
 ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(15,7),color='#86bf91')
 ax.set_title('High Performers (300 AB or more) \nPlayer Played 12 or More Years \n', weight='bold', size=14)
@@ -145,15 +171,17 @@ ax.set_ylabel("Age of Player", labelpad=10, weight='bold', size=10)
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
 
+# Scatter plot for all players OPS vs Years Played
 dfplot = df[(df['OPS'] < 1.5) & (df['OPS'] > 0)][['OPS','years_played']]
 ax = dfplot.plot(kind='scatter', x='OPS',y='years_played',figsize=(15,7),color='#86bf91')
-ax.set_title('Years in League vs. OPS \n', weight='bold', size=14)
+ax.set_title('Years in League vs. OPS \nAll Players\n', weight='bold', size=14)
 ax.set_xlabel("OPS", labelpad=10, weight='bold', size=10)
 ax.set_ylabel("Years in League", labelpad=10, weight='bold', size=10)
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
 print('\n\n')
 
+# Scatter plot for catchers only by OPS vs Age
 dfplot = df[df['POS'] == 'C']
 dfplot = dfplot[(dfplot['OPS'] < 1.5) & (dfplot['OPS'] > .0)][['OPS','age']]
 ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(15,7),color='#86bf91')
@@ -162,7 +190,14 @@ ax.set_xlabel("OPS", labelpad=10, weight='bold', size=10)
 ax.set_ylabel("Catcher Age", labelpad=10, weight='bold', size=10)
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
-
+#
+####################################################################################################################
+#
+# Line plots looking at OPS, AVG, SLG and OBP summarized by Position and Position Category over Time
+#
+####################################################################################################################
+#
+# plot players by Position against OPS for all players
 dfplot = df[['yearID','POS','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
 dfplot = dfplot.groupby(['yearID','POS']).sum()
 dfplot = calc_ops(dfplot)
@@ -172,7 +207,7 @@ dfplot.columns = dfplot.columns.droplevel()
 dfplot.columns.POS = None
 dfplot = dfplot.reset_index()
 ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=3,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
-ax.set_title('OPS by Position Trend over Time\n',weight='bold', size=14)
+ax.set_title('OPS by Position Trend over Time\nAll Players\n',weight='bold', size=14)
 ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
 ax.set_ylabel("OPS", labelpad=10, weight='bold', size=10)
 leg = plt.legend()
@@ -184,18 +219,18 @@ for text in leg.get_texts():
     text.set_fontsize('x-large')
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
-#print(dfplot)
 
+# plot players by Position Category against OPS for all players
 dfplot = df[['yearID','POS_Cat','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
 dfplot = dfplot.groupby(['yearID','POS_Cat']).sum()
 dfplot = calc_ops(dfplot)
 dfplot = dfplot[['OPS']]
 dfplot = dfplot.unstack()
 dfplot.columns = dfplot.columns.droplevel()
-dfplot.columns.POS = None
+dfplot.columns.POS_Cat = None
 dfplot = dfplot.reset_index()
 ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
-ax.set_title('OPS by Position Category Trend over Time\n',weight='bold', size=14)
+ax.set_title('OPS by Position Category Trend over Time\nAll Players\n',weight='bold', size=14)
 ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
 ax.set_ylabel("OPS", labelpad=10, weight='bold', size=10)
 leg = plt.legend()
@@ -208,6 +243,122 @@ for text in leg.get_texts():
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
 
+# plot players against AVG, SLG and OBP by Position Category for all players
+dfplot = df[['yearID','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
+dfplot = dfplot.groupby(['yearID']).sum()
+dfplot = calc_ops(dfplot)
+dfplot = dfplot[['AVG','SLG','OBP']]
+dfplot = dfplot.reset_index()
+ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
+ax.set_title('AVG, SLG & OBP by Trend over Time\nAll Players\n',weight='bold', size=14)
+ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
+ax.set_ylabel("OPS", labelpad=10, weight='bold', size=10)
+leg = plt.legend()
+# get the individual lines inside legend and set line width
+for line in leg.get_lines():
+    line.set_linewidth(4)
+# get label texts inside legend and set font size
+for text in leg.get_texts():
+    text.set_fontsize('x-large')
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+plt.show()
+
+# plot players played 12 or more years against AVG, SLG and OBP by Position Category
+dfplot = df[(df['years_played'] >= 12) & (df['age'] <= 40) & (df['age'] >= 20)][['yearID','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
+dfplot = dfplot.groupby(['yearID']).sum()
+dfplot = calc_ops(dfplot)
+dfplot = dfplot[['AVG','SLG','OBP']]
+dfplot = dfplot.reset_index()
+ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
+ax.set_title('AVG, SLG & OBP by Trend over Time\nPlayers Played 12 or More Years\n',weight='bold', size=14)
+ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
+ax.set_ylabel("AVG, SLG & OBP", labelpad=10, weight='bold', size=10)
+leg = plt.legend()
+# get the individual lines inside legend and set line width
+for line in leg.get_lines():
+    line.set_linewidth(4)
+# get label texts inside legend and set font size
+for text in leg.get_texts():
+    text.set_fontsize('x-large') 
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+plt.show()
+
+# plot players AVG by Position for all playersy
+dfplot = df[['yearID','POS','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
+dfplot = dfplot.groupby(['yearID','POS']).sum()
+dfplot = calc_ops(dfplot)
+dfplot = dfplot[['AVG']]
+dfplot = dfplot.unstack()
+dfplot.columns = dfplot.columns.droplevel()
+dfplot.columns.POS = None
+dfplot = dfplot.reset_index()
+ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
+ax.set_title('AVG over Time by Position\n All Players \n',weight='bold', size=14)
+ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
+ax.set_ylabel("AVG", labelpad=10, weight='bold', size=10)
+leg = plt.legend()
+# get the individual lines inside legend and set line width
+for line in leg.get_lines():
+    line.set_linewidth(4)
+# get label texts inside legend and set font size
+for text in leg.get_texts():
+    text.set_fontsize('x-large') 
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+plt.show()
+
+# plot players SLG by Position for all players
+dfplot = df[['yearID','POS','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
+dfplot = dfplot.groupby(['yearID','POS']).sum()
+dfplot = calc_ops(dfplot)
+dfplot = dfplot[['SLG']]
+dfplot = dfplot.unstack()
+dfplot.columns = dfplot.columns.droplevel()
+dfplot.columns.POS = None
+dfplot = dfplot.reset_index()
+ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
+ax.set_title('SLG over Time by Position\n All Players \n',weight='bold', size=14)
+ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
+ax.set_ylabel("SLG", labelpad=10, weight='bold', size=10)
+leg = plt.legend()
+# get the individual lines inside legend and set line width
+for line in leg.get_lines():
+    line.set_linewidth(4)
+# get label texts inside legend and set font size
+for text in leg.get_texts():
+    text.set_fontsize('x-large') 
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+plt.show()
+
+# plot players OBP by Position for all players
+dfplot = df[['yearID','POS','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
+dfplot = dfplot.groupby(['yearID','POS']).sum()
+dfplot = calc_ops(dfplot)
+dfplot = dfplot[['OBP']]
+dfplot = dfplot.unstack()
+dfplot.columns = dfplot.columns.droplevel()
+dfplot.columns.POS = None
+dfplot = dfplot.reset_index()
+ax = dfplot.plot(kind='line',x='yearID',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
+ax.set_title('OBP over Time by Position\n All Players \n',weight='bold', size=14)
+ax.set_xlabel("Year", labelpad=10, weight='bold', size=10)
+ax.set_ylabel("OBP", labelpad=10, weight='bold', size=10)
+leg = plt.legend()
+# get the individual lines inside legend and set line width
+for line in leg.get_lines():
+    line.set_linewidth(4)
+# get label texts inside legend and set font size
+for text in leg.get_texts():
+    text.set_fontsize('x-large') 
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+plt.show()
+
+#
+####################################################################################################################
+#
+# Line plots looking at OPS, AVG, SLG and OBP summarized by Position and Position Category compared against Age
+#
+####################################################################################################################
+#
 # plot players played 12 or more years against OPS by Position Category
 dfplot = df[(df['years_played'] >= 12) & (df['age'] <= 40) & (df['age'] >= 20)][['age','POS_Cat','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
 dfplot = dfplot.groupby(['age','POS_Cat']).sum()
@@ -254,16 +405,16 @@ for text in leg.get_texts():
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
 
-# plot players played 12 or more years against OPS by Position
-dfplot = df[(df['years_played'] >= 12) & (df['age'] <= 40) & (df['age'] >= 20)][['age','POS','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
+# plot players played 12 or more years against SLG, OBP and AVG for all players
+dfplot = df[(df['years_played'] >= 12) & (df['age'] <= 40) & (df['age'] >= 20)][['age','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
 dfplot = dfplot.groupby(['age']).sum()
 dfplot = calc_ops(dfplot)
-dfplot = dfplot[['OPS']]
+dfplot = dfplot[['SLG','AVG','OBP']]
 dfplot = dfplot.reset_index()
-ax = dfplot.plot(kind='line',x='age',figsize=(15,8),linewidth=4,color='#86bf91')
-ax.set_title('OPS by Age\nPlayers Played 12 or More Years\n',weight='bold', size=14)
+ax = dfplot.plot(kind='line',x='age',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99','#ffcc99'])
+ax.set_title('SLG, OBP and AVG by Age\nPlayers Played 12 or More Years\n',weight='bold', size=14)
 ax.set_xlabel("Age", labelpad=10, weight='bold', size=10)
-ax.set_ylabel("OPS", labelpad=10, weight='bold', size=10)
+ax.set_ylabel("SLG, OBP & AVG", labelpad=10, weight='bold', size=10)
 leg = plt.legend()
 # get the individual lines inside legend and set line width
 for line in leg.get_lines():
@@ -272,5 +423,28 @@ for line in leg.get_lines():
 for text in leg.get_texts():
     text.set_fontsize('x-large')
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-ax.get_legend().remove()
+plt.show()
+
+
+# plot players played 12 or more years against SLG and OBP by Position Category
+dfplot = df[(df['years_played'] >= 12) & (df['age'] <= 40) & (df['age'] >= 20)][['age','POS_Cat','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
+dfplot = dfplot.groupby(['age','POS_Cat']).sum()
+dfplot = calc_ops(dfplot)
+dfplot = dfplot[['SLG','OBP']]
+dfplot = dfplot.unstack()
+dfplot.columns = dfplot.columns.map(''.join)
+dfplot.columns.POS_Cat = None
+dfplot = dfplot.reset_index()
+ax = dfplot.plot(kind='line',x='age',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
+ax.set_title('SLG, OBP by Position Category by Age\nPlayers Played 12 or More Years\n',weight='bold', size=14)
+ax.set_xlabel("Age", labelpad=10, weight='bold', size=10)
+ax.set_ylabel("SLG & OBP", labelpad=10, weight='bold', size=10)
+leg = plt.legend()
+# get the individual lines inside legend and set line width
+for line in leg.get_lines():
+    line.set_linewidth(4)
+# get label texts inside legend and set font size
+for text in leg.get_texts():
+    text.set_fontsize('x-large')
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()

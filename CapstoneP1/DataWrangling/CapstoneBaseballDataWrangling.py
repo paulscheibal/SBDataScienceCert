@@ -53,6 +53,7 @@ def calc_ops(df):
     df['SLG'] = df['TB'] / df['AB']
     df['OBP'] = ( df['H'] + df['BB'] + df['HBP'] ) / ( df['AB'] + df['BB'] + df['SF'] + df['HBP'] )                 
     df['OPS'] = df['OBP'] + df['SLG'] 
+    df['AVG'] = df['H'] / df['AB']
     return  df
 
 # checks to see if validation file exists, if not it reads data from fangraphs otherwise uses file that already exists.
@@ -445,30 +446,7 @@ print('Adding avg_yrly_AB and years_played -------------------------------------
 print('\n')
 dfstats = avg_yearly_AB(dfbatting_player_stats.loc[:,['yearID','playerID','AB']])
 dfbatting_player_stats = pd.merge(dfbatting_player_stats , dfstats, on='playerID')
-
-#dfbatting_player_stats['1B'] = dfbatting_player_stats['H'] - (
-#                                                               dfbatting_player_stats['2B'] +
-#                                                               dfbatting_player_stats['3B'] +
-#                                                               dfbatting_player_stats['HR']
-#                                                             )
-#
-#dfbatting_player_stats['TB'] =  dfbatting_player_stats['1B'] + (dfbatting_player_stats['2B'] * 2) + (dfbatting_player_stats['3B'] * 3) + (dfbatting_player_stats['HR'] * 4) 
-#                               
-#dfbatting_player_stats['SLG'] = dfbatting_player_stats['TB'] / dfbatting_player_stats['AB']
-#
-#dfbatting_player_stats['OBP'] = ((
-#                                 dfbatting_player_stats['H'] + 
-#                                 dfbatting_player_stats['BB'] +
-#                                 dfbatting_player_stats['HBP'] 
-#                                ) / (
-#                                     dfbatting_player_stats['AB'] + 
-#                                     dfbatting_player_stats['BB'] +
-#                                     dfbatting_player_stats['SF'] +
-#                                     dfbatting_player_stats['HBP'] 
-#                                    ))
-#                    
-#dfbatting_player_stats['OPS'] = dfbatting_player_stats['OBP'] + dfbatting_player_stats['SLG'] 
-
+# calculate metrics for each player by year (OPS, OBP, SLG, AVG)
 dfbatting_player_stats = calc_ops(dfbatting_player_stats)
 
 # could have rounded above in one statement but rounding before being used in calculations was causing
