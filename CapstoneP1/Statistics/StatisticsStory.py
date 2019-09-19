@@ -8,7 +8,6 @@ Created on Wed Sep 18 12:31:14 2019
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from pybaseball import batting_stats
 import os.path
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -32,35 +31,6 @@ LEGEND_PROPERTIES = {'weight':'bold'}
 # set path for reading Lahman baseball statistics
 path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
 bigcontractsfile = 'BigPlayerContractsMLB.csv'
-
-# saves a excel file to disk from a dataframe
-def save_stats_file(path, fn, df):
-    stf = path + fn
-    df.to_csv(stf, index=None, header=True)
-    return True
-
-#routine that calculates OPS, OBP and SLG and returns them to calling routine.
-def calc_ops(df):    
-    df['1B'] = df['H'] - ( df['2B'] + df['3B'] + df['HR'] )  
-    df['TB'] =  df['1B'] + (df['2B'] * 2) + (df['3B'] * 3) + (df['HR'] * 4)                             
-    df['SLG'] = df['TB'] / df['AB']
-    df['OBP'] = ( df['H'] + df['BB'] + df['HBP'] ) / ( df['AB'] + df['BB'] + df['SF'] + df['HBP'] )                 
-    df['OPS'] = df['OBP'] + df['SLG'] 
-    df['AVG'] = df['H'] / df['AB']
-    return  df
-
-# ECDF function
-def ecdf(data):
-    x = np.sort(data)
-    print(x)
-    n = len(x)
-    y = np.arange(1,n+1) / n
-    return x,y    
-
-# calculate covariance and Pearson's Coeficient
-def pearson_r(x,y):
-    corr_mat = np.corrcoef(x,y)
-    return(corr_mat[0,1])
 
 battingf = path + 'dfbatting_player_stats.csv'
 dfbatting_player_stats = pd.read_csv(battingf,parse_dates=['debut','finalGame','birthdate'])
@@ -126,6 +96,12 @@ def myPearson_Corr(cov, xs, ys):
 #    corr_mat = np.corrcoef(x,y)
 #    return(corr_mat[0,1])
 
+# set figure size
+fig_size = plt.rcParams['figure.figsize']
+fig_size[0] = FSHZ
+fig_size[1] = 9
+plt.rcParams["figure.figsize"] = fig_size
+
 battingf = path + 'dfbatting_player_stats.csv'
 dfbatting_player_stats = pd.read_csv(battingf,parse_dates=['debut','finalGame','birthdate'])
 
@@ -165,7 +141,7 @@ leg = plt.legend()
 plt.xticks(np.arange(.000,1.600,.200))
 ax = plt.gca()
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-fig = plt.figure(figsize=(FSHZ,9))
+
 # get the individual lines inside legend and set line width
 for line in leg.get_lines():
     line.set_linewidth(2)
@@ -191,8 +167,8 @@ sage = np.array(dfplot.age)
 sops = np.array(dfplot.OPS)
 
 cov = myCovariance(sage,sops)
-pcoef = myPearson_Corr(cov, sage, sops)
-print('Pearson Coefficient Shows Weak Positive Correlation %.3f' % pcoef)
+pcorr = myPearson_Corr(cov, sage, sops)
+print('Pearson Correlationt Shows Weak Correlation %.3f' % pcorr)
 
 # Combined OPS vs Age scatter plot; age >= 28
 dfplot = df[(df['years_played'] >= 12) & (df['age'] <= 40) & (df['age'] >= 28)][['age','POS','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
@@ -217,8 +193,8 @@ sops = np.array(dfplot.OPS)
 #print('Pearson Coefficient Shows Strong Negative Correlation %.3f' % r)
 
 cov = myCovariance(sage,sops)
-pcoef = myPearson_Corr(cov, sage, sops)
-print('Pearson Coefficient Shows Strong Positive Correlation %.3f' % pcoef)
+pcorr = myPearson_Corr(cov, sage, sops)
+print('Pearson Correlation Shows Strong Negative Correlation %.3f' % pcorr)
 
 # Combined OPS vs Age scatter plot; age >= 28
 dfplot = df[(df['years_played'] >= 12) & (df['age'] <= 27) & (df['age'] >= 20)][['age','POS','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
@@ -243,8 +219,8 @@ sops = np.array(dfplot.OPS)
 #print('Pearson Coefficient Shows Strong Negative Correlation %.3f' % r)
 
 cov = myCovariance(sage,sops)
-pcoef = myPearson_Corr(cov, sage, sops)
-print('Pearson Coefficient Shows Strong Positive Correlation %.3f' % pcoef)
+pcorr = myPearson_Corr(cov, sage, sops)
+print('Pearson Correlation Shows Strong Positive Correlation %.3f' % pcorr)
 
 # Combined OPS vs years played of athelets between the age of 28 and 40
 dfplot = df[(df['age'] <= 40) & (df['age'] >= 28) & (df['years_played'] < 20)][['years_played','POS','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
@@ -266,8 +242,8 @@ sage = np.array(dfplot.years_played)
 sops = np.array(dfplot.OPS)
 
 cov = myCovariance(sage,sops)
-pcoef = myPearson_Corr(cov, sage, sops)
-print('Pearson Coefficient Shows Strong Positive Correlation %.3f' % pcoef)
+pcorr = myPearson_Corr(cov, sage, sops)
+print('Pearson Correlation Shows Strong Positive Correlation %.3f' % pcorr)
 
 
 
