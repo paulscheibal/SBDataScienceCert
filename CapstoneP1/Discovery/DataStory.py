@@ -9,6 +9,10 @@ import matplotlib as mpl
 import pylab as plb
 import seaborn as sns
 
+
+sns.set()
+sns.set_style('ticks')
+
 MIN_AT_BATS = 0
 START_YEAR = 1954
 END_YEAR = 2018
@@ -78,6 +82,8 @@ for tick in ax.get_yticklabels():
     tick.set_fontsize(12)
 plt.yticks(np.arange(0,14,2))
 plt.xticks(rotation=45)
+plb.axhline(dfplot['Contract Years'].mean(),c='C1',label='Avg Years')
+plt.legend()
 plt.show()
 print('\n\n')
 
@@ -95,6 +101,8 @@ for tick in ax.get_xticklabels():
 for tick in ax.get_yticklabels():
     tick.set_fontsize(12)
 plt.xticks(rotation=45)
+plb.axhline(dfplot['Contract Value'].mean(),c='C1',label='Avg Value')
+plt.legend()
 plt.show()
 print('\n\n')
 
@@ -117,7 +125,7 @@ print('\n\n')
 
 # plot the combined OPS of all 21 players
 dfbig = pd.merge(dfbatting_player_stats,dfbig, on='playerID')
-dfbig = dfbig[(dfbig['age'] > 22) & (dfbig['age'] <= 40)]
+dfbig = dfbig[(dfbig['age'] > 22) & (dfbig['age'] <= 40)][['age','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
 dfplot = dfbig.groupby('age').sum()
 dfplot = calc_ops(dfplot)
 dfplot = dfplot[['OPS']]
@@ -126,6 +134,7 @@ ax = dfplot.plot(kind='line',x='age',figsize=(15,8),linewidth=4,color='#86bf91')
 ax.set_title('MLB Lucrative Contracts OPS Trend\n21 Baseball Stars',weight='bold', size=14)
 ax.set_xlabel("Age", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 leg = plt.legend()
 # get the individual lines inside legend and set line width
 for line in leg.get_lines():
@@ -133,8 +142,14 @@ for line in leg.get_lines():
 # get label texts inside legend and set font size
 for text in leg.get_texts():
     text.set_fontsize('x-large')
-ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-plt.yticks(np.arange(.700,1.000,.050))
+plt.yticks(np.arange(.500,1.000,.050))
+plb.axhline(.9000,c='C1',label='Excellent - .9000', color='#ff9999')
+plb.axhline(.8334,c='C2',label='Very Good - .8334', color='#66b3ff')
+plb.axhline(.7667,c='C3',label='Above Average - .7667', color='#99ff99')
+plb.axhline(.7000,c='C4',label='Average - .7000', color='#ffcc99')
+plb.axhline(.6334,c='C5',label='Below Average - .6334', color='#66aa99')
+plb.axhline(.5667,c='C6',label='Poor - .5667', color='#557799')
+leg = plt.legend()
 plt.show()
 
 #
@@ -305,7 +320,7 @@ for tick in ax.get_yticklabels():
 plt.show()
 
 # Scatter plot for players playing for 12 or more years with at least 300 avg atbats by OPS vs Age
-dfplot = df[ (df['OPS'] > .0) & (df['OPS'] <= 1.5)][['OPS','age']]
+dfplot = df[ (df['OPS'] > .0) & (df['OPS'] <= 1.5)][['OPS','age','years_played']]
 ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(FSHZ,7),color='#86bf91')
 ax.set_title('OPS vs. Age \nAll Position Players\n', weight='bold', size=14)
 ax.set_xlabel("OPS", labelpad=10, size=14)
@@ -331,19 +346,51 @@ ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
 print('\n\n')
 
-# Scatter plot for catchers only by OPS vs Age
-dfplot = df[df['POS'] == 'C']
-dfplot = dfplot[(dfplot['OPS'] < 1.5) & (dfplot['OPS'] > .0)][['OPS','age']]
-ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(FSHZ,7),color='#86bf91')
-ax.set_title('Player Age (Catchers only) vs. OPS \n',weight='bold', size=14)
+# Scatter plot for only catchers OPS vs Years Played
+dfplot = df[(df['POS'] == 'C') & (df['OPS'] < 1.5) & (df['OPS'] > 0)][['OPS','years_played']]
+ax = dfplot.plot(kind='scatter', x='OPS',y='years_played',figsize=(FSHZ,7),color='#86bf91')
+ax.set_title('Years in League vs. OPS \nAll Players\n', weight='bold', size=14)
 ax.set_xlabel("OPS", labelpad=10, size=14)
-ax.set_ylabel("Catcher Age", labelpad=10, size=14)
+ax.set_ylabel("Years in League", labelpad=10, size=14)
 for tick in ax.get_xticklabels():
     tick.set_fontsize(11)
 for tick in ax.get_yticklabels():
     tick.set_fontsize(11)
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
+print('\n\n')
+
+## Scatter plot for catchers only by OPS vs Age
+#dfplot = df[(df['OPS'] < 1.5) & (df['OPS'] > .500)][['age','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
+#dfplot = dfplot.groupby('age').sum()
+#dfplot = dfplot.reset_index()
+#dfplot = calc_ops(dfplot)
+#ax = dfplot.plot(kind='scatter', x='age',y='OPS',figsize=(FSHZ,7),color='#86bf91')
+#ax.set_title('Player Age vs. Combined OPS \n',weight='bold', size=14)
+#ax.set_xlabel("OPS", labelpad=10, size=14)
+#ax.set_ylabel("Catcher Age", labelpad=10, size=14)
+#for tick in ax.get_xticklabels():
+#    tick.set_fontsize(11)
+#for tick in ax.get_yticklabels():
+#    tick.set_fontsize(11)
+#ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+#plt.show()
+#
+## Scatter plot for catchers only by OPS vs Age
+#dfplot = df[(df['POS'] == 'C') & (df['OPS'] < 1.5) & (df['OPS'] > .500)][['age','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
+#dfplot = dfplot.groupby('age').sum()
+#dfplot = dfplot.reset_index()
+#dfplot = calc_ops(dfplot)
+#ax = dfplot.plot(kind='scatter', x='age',y='OPS',figsize=(FSHZ,7),color='#86bf91')
+#ax.set_title('Player Age (Catchers only) vs. Combined OPS \n',weight='bold', size=14)
+#ax.set_xlabel("OPS", labelpad=10, size=14)
+#ax.set_ylabel("Catcher Age", labelpad=10, size=14)
+#for tick in ax.get_xticklabels():
+#    tick.set_fontsize(11)
+#for tick in ax.get_yticklabels():
+#    tick.set_fontsize(11)
+#ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+#plt.show()
 
 #
 ####################################################################################################################
@@ -448,7 +495,7 @@ dfplot.columns = dfplot.columns.droplevel()
 dfplot.columns.POS = None
 dfplot = dfplot.reset_index()
 ax = dfplot.plot(kind='line',x='age',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
-ax.set_title('OPS by Position Category by Age\nPlayers Played 12 or More Years\n',weight='bold', size=14)
+ax.set_title('Combined OPS by Position Category by Age\nPlayers Played 12 or More Years\n',weight='bold', size=14)
 ax.set_xlabel("Age", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
 leg = plt.legend()
@@ -459,7 +506,14 @@ for line in leg.get_lines():
 for text in leg.get_texts():
     text.set_fontsize('x-large') 
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-plt.yticks(np.arange(.550,.900,.050))
+plt.yticks(np.arange(.350,1.000,.050))
+plb.axhline(.9000,c='C1',label='Excellent - .9000', color='#ff9999')
+plb.axhline(.8334,c='C2',label='Very Good - .8334', color='#66b3ff')
+plb.axhline(.7667,c='C3',label='Above Average - .7667', color='#99ff99')
+plb.axhline(.7000,c='C4',label='Average - .7000', color='#ffcc99')
+plb.axhline(.6334,c='C5',label='Below Average - .6334', color='#66aa99')
+plb.axhline(.5667,c='C6',label='Poor - .5667', color='#557799')
+leg = plt.legend()
 plt.show()
 
 # plot players played 12 or more years against OPS by Position
@@ -472,7 +526,7 @@ dfplot.columns = dfplot.columns.droplevel()
 dfplot.columns.POS = None
 dfplot = dfplot.reset_index()
 ax = dfplot.plot(kind='line',x='age',figsize=(15,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99','#ffcc99','#66aa99','#557799'])
-ax.set_title('OPS by Position by Age\nPlayers Played 12 or More Years\n',weight='bold', size=14)
+ax.set_title('Combined OPS by Position by Age\nPlayers Played 12 or More Years\n',weight='bold', size=14)
 ax.set_xlabel("Age", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
 leg = plt.legend()
@@ -483,6 +537,13 @@ for line in leg.get_lines():
 for text in leg.get_texts():
     text.set_fontsize('x-large')
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-plt.yticks(np.arange(.550,.900,.050))
+plt.yticks(np.arange(.350,1.000,.050))
+plb.axhline(.9000,c='C1',label='Excellent - .9000', color='#ff9999')
+plb.axhline(.8334,c='C2',label='Very Good - .8334', color='#66b3ff')
+plb.axhline(.7667,c='C3',label='Above Average - .7667', color='#99ff99')
+plb.axhline(.7000,c='C4',label='Average - .7000', color='#ffcc99')
+plb.axhline(.6334,c='C5',label='Below Average - .6334', color='#66aa99')
+plb.axhline(.5667,c='C6',label='Poor - .5667', color='#557799')
+leg = plt.legend()
 plt.show()
 
