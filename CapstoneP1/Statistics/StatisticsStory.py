@@ -14,7 +14,12 @@ import matplotlib.ticker as mtick
 import matplotlib as mpl
 import pylab as plb
 import seaborn as sns
-
+import matplotlib.mlab as mlab
+import scipy.stats 
+from scipy.stats import shapiro
+from scipy.stats import anderson
+from scipy.stats import normaltest
+import math
 
 sns.set()
 sns.set_style('ticks')
@@ -109,17 +114,36 @@ dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut']
                                                 (dfbatting_player_stats['finalGame'] <= END_DATE)]
 
 df = dfbatting_player_stats
-# read in file of some of the bigger contracts in MLB from 1970's to current.
-bigcontractsf = path + bigcontractsfile
-dfbig = pd.read_csv(bigcontractsf)
+## read in file of some of the bigger contracts in MLB from 1970's to current.
+#bigcontractsf = path + bigcontractsfile
+#dfbig = pd.read_csv(bigcontractsf)
+#
+#############################################################################################################
+#
+#  plot the histogram from layman data against the normal distribution and layman ECDF against the norm CDF
+#
+#############################################################################################################
+# 
+# histogram wiht normal distribution with layman mean and standard deviation
 
-# ECDF
-data = dfbatting_player_stats[(dfbatting_player_stats['OPS'] <= 1.5) & (dfbatting_player_stats['OPS'] > 0) & (dfbatting_player_stats['OPS'] < 2)][['OPS']]
+data = df[(df['OPS'] <= 1.5) & (df['OPS'] > 0.0)]
 data = np.array(data.OPS)
+mu = np.mean(data)
+sigma = np.std(data)
+_ = plt.hist(data, bins=30, alpha=0.4, density=True, color='#86bf91')
+x = np.linspace(min(data), max(data), 100)
+y = scipy.stats.norm.pdf(x, mu, sigma)
+_ = plt.plot(x, y, linewidth = 3)
+_ = plt.title('OPS Histogram with Normal Dist Overlay\n',weight='bold', size=16)
+_ = plt.xlabel('OPS', labelpad=10, size=14)
+_ = plt.ylabel('Normalized Distribution Values', labelpad=10, size = 14)
+plt.show()
+
+# ECDF and norm CDF
 x_ops, y_ops = ecdf(data)
 mu = np.mean(x_ops)
 sigma = np.std(x_ops)
-sample = np.random.normal(mu,sigma,size=1000000)
+sample = np.random.normal(mu, sigma, size=100000)
 x_n, y_n = ecdf(sample)
 ptiles = np.array([20.7,34.5,53.4,72.2,86.1,93.8])
 ptiles_vals = np.percentile(x_ops,ptiles)
@@ -128,7 +152,7 @@ _ = plt.plot(x_n, y_n, marker='.',linestyle='none', label = 'Normal CDF',color='
 _ = plt.plot(ptiles_vals, ptiles/100,marker='D',color='red',linestyle='none', label='OPS Percentiles')
 _ = plt.title('ECDF vs CDF (Normal) OPS\n',weight='bold', size=16)
 _ = plt.xlabel('OPS', labelpad=10, size=14)
-_ = plt.ylabel('ECDF', labelpad=10, size = 14)
+_ = plt.ylabel('Layman Data vs. Normal ECDF', labelpad=10, size = 14)
 ptiles_str =  [str( '%1.3f' % ptiles_vals[i] ) for i in range(0,len(ptiles))]
 ptiles_leg = [str(ptiles[i]) + ' Percentile (OPS = ' + ptiles_str[i] + ')' for i in range(0,len(ptiles))]
 plb.axvline(ptiles_vals[5],c='C1',label=ptiles_leg[5] + ' Excellent', color='#ff9999')
@@ -141,7 +165,6 @@ leg = plt.legend()
 plt.xticks(np.arange(.000,1.600,.200))
 ax = plt.gca()
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-
 # get the individual lines inside legend and set line width
 for line in leg.get_lines():
     line.set_linewidth(2)
@@ -150,6 +173,39 @@ for text in leg.get_texts():
     text.set_fontsize('large')
 plt.show()
 
+# perform a number of tests on layman population OPS data
+print('\n\n')
+print('Two Tests for Null Hypothesis (H0) that Layman OPS population data is Normal\n\n')
+# D'Agostinos K^2 Test
+stat, p = normaltest(data)
+print('D''Agostinos K^2 Test:\n')
+print('Statistics=%.3f, p=%.3f' % (stat, p))
+alpha = 0.05
+if p < alpha:
+    print("Data does not look normal (reject H0)")
+else:
+    print("Data looks normal (fail to reject H0)")
+print('\n')
+# Anderson Darling test
+result = anderson(data)
+print('Anderson Darling Test:\n')
+print('Statistic: %.3f' % result.statistic)
+p = 0
+for i in range(len(result.critical_values)):
+	sl, cv = result.significance_level[i], result.critical_values[i]
+	if result.statistic < result.critical_values[i]:
+		print('%.3f: %.3f, Data looks normal (fail to reject H0)' % (sl, cv))
+	else:
+		print('%.3f: %.3f, Data does not look normal (reject H0)' % (sl, cv))
+print('\n\n')
+
+#
+#############################################################################################################
+#
+#  scatter plots for various cross sections of data looking for a good Pearson Correlation
+#
+#############################################################################################################
+#
 # Scatter plot for players playing for 12 or more years by OPS vs Age
 dfplot = df[ (df['OPS'] > .0) & (df['OPS'] <= 1.5) & (df['age'] >=  0) & (df['years_played'] >= 12) ][['OPS','age','years_played']]
 ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(FSHZ,7),color='#86bf91')
