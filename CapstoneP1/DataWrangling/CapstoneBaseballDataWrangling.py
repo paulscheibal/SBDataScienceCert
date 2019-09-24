@@ -56,16 +56,16 @@ def calc_ops(df):
     df['AVG'] = df['H'] / df['AB']
     return  df
 
-# checks to see if validation file exists, if not it reads data from fangraphs otherwise uses file that already exists.
-# if fangraphs API is called it writes the validation file for later use.  takes a long time for API call.
-def get_fangraphs_data(path, fn, startyear, endyear, force_API):
-    fgf = path + fn
-    if (force_API == True) or (not os.path.exists(fgf)):
-        data = batting_stats(startyear,endyear)
-        export_csv = data.to_csv(fgf, index=None, header=True)
-    else:
-        data = pd.read_csv(fgf)
-    return data
+# calc OPS Average for each player
+def calc_OPS_AVG(df):
+    # calculate mean for each player
+    dfmean = df[['playerID','OPS']].groupby('playerID').mean()
+    # rename the column to OPS_AVG
+    dfmean.columns = ['OPS_AVG']
+    # reset index and merge data back in baseball dataframe
+    dfmean = dfmean.reset_index()
+    df = pd.merge(df,dfmean,on='playerID')
+    return df
 
 def save_stats_file(path, fn, df):
     stf = path + fn
@@ -87,58 +87,8 @@ def avg_yearly_AB(df):
     dfgrp = dfgrp.reset_index(drop=True)
     dfgrp.avg_yrly_AB = dfgrp.avg_yrly_AB.astype(np.int64)
     return dfgrp
-
-# function to take a year of data and put it in format to do comparisons with layman data
-def fangraphs_wrangle(dffangraphs):
-    print(dffangraphs.index)
-    dffangraphs = data[['Name','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']]
-    convert_dict = {
-                 'G':np.int64,
-                 'AB':np.int64,
-                 'H':np.int64,
-                 '2B':np.int64,
-                 '3B':np.int64,
-                 'HR':np.int64,
-                 'SF':np.int64,
-                 'BB':np.int64,
-                 'HBP':np.int64
-               }
-    dffangraphs = dffangraphs.astype(convert_dict)
-    dffangraphs.columns = ['playername','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']
-    dffangraphs = dffangraphs.reset_index(drop=True)
-    dffangraphs = dffangraphs.groupby('playername').sum()
-    dffangraphs = dffangraphs.reset_index()
-    dffangraphs = dffangraphs[dffangraphs['AB'] >= MIN_AT_BATS]
-    dffangraphs = dffangraphs.reset_index(drop=True)
-    return(dffangraphs)
-
-# function to take a year of data and put it in format to do comparisons to fangraphs data
-def layman_wrangle(dfbatting,year):
-    # filter on AB for minimum at bats.  dfbatting is a copy of dfbatting_player_stats prior to filtering avg_yrly_AB
-    dfhits_playersval = dfbatting[dfbatting['AB'] >= MIN_AT_BATS]
-
-    dfhitsyr = dfhits_playersval[(dfhits_playersval['yearID'] == year)][['playername','playerID','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']]
-    dfhitsyr = dfhitsyr.reset_index(drop=True)
-    return(dfhitsyr)
     
-# function to calculate differences between fangraphs and layman
-def validate_batting_data(dffangraphs, dfhits):
-    dfhits_val = pd.merge(dfhits,dffangraphs,on='playername')
-    dfhits_diff = pd.DataFrame()
-    dfhits_diff['playername'] = dfhits_val['playername']
-    dfhits_diff['G_diff'] = dfhits_val['G_x'] - dfhits_val['G_y']
-    dfhits_diff['AB_diff'] = dfhits_val['AB_x'] - dfhits_val['AB_y']
-    dfhits_diff['H_diff'] = dfhits_val['H_x'] - dfhits_val['H_y']
-    dfhits_diff['2B_diff'] = dfhits_val['2B_x'] - dfhits_val['2B_y']
-    dfhits_diff['3B_diff'] = dfhits_val['3B_x'] - dfhits_val['3B_y']
-    dfhits_diff['HR_diff'] = dfhits_val['HR_x'] - dfhits_val['HR_y']
-    dfhits_diff['SF_diff'] = dfhits_val['SF_x'] - dfhits_val['SF_y']
-    dfhits_diff['BB_diff'] = dfhits_val['BB_x'] - dfhits_val['BB_y']
-    dfhits_diff['HBP_diff'] = dfhits_val['HBP_x'] - dfhits_val['HBP_y']
-    dfhits_diff['SLG_diff'] = (dfhits_val['SLG_x'] - dfhits_val['SLG_y']).round(4)
-    dfhits_diff['OBP_diff'] = (dfhits_val['OBP_x'] - dfhits_val['OBP_y']).round(4)
-    dfhits_diff['OPS_diff'] = (dfhits_val['OPS_x'] - dfhits_val['OPS_y']).round(4)
-    return dfhits_diff, dfhits_val;
+
 
 ######################################################################################
 #
@@ -448,6 +398,7 @@ dfstats = avg_yearly_AB(dfbatting_player_stats.loc[:,['yearID','playerID','AB']]
 dfbatting_player_stats = pd.merge(dfbatting_player_stats , dfstats, on='playerID')
 # calculate metrics for each player by year (OPS, OBP, SLG, AVG)
 dfbatting_player_stats = calc_ops(dfbatting_player_stats)
+dfbatting_player_stats = calc_OPS_AVG(dfbatting_player_stats)
 
 # could have rounded above in one statement but rounding before being used in calculations was causing
 # rounding errors and data was off sightly.  Doing rounding after fixed this.
@@ -476,102 +427,6 @@ print('\n')
 
 ######################################################################################
 #
-#   verify one year of data using pybaseball package and using fangraphs API
-#   The batting_stats function returns season-level batting data from FanGraphs
-#
-######################################################################################
-
-print('Independent Validation START===================================================')
-print('\n')
-#specify startyear to the endyear of the data you want returned
-data = get_fangraphs_data(path, 'fangraphs_2017.csv', 2017,2017,force_API=False)
-dffangraphs_2017 = fangraphs_wrangle(data)
-dfpitcherlst = list(dfpitchers['playername'])
-dffangraphs_2017 = dffangraphs_2017[~dffangraphs_2017['playername'].isin(dfpitcherlst)]
-
-print('Fangraph data for 2017 with minimum at bats of MIN_AT_BATS --------------------')
-print('\n')
-print(dffangraphs_2017.head(20))
-print(dffangraphs_2017.info())
-#get 2017 data from layman data for comparison to fangraphs
-dfhits_2017 = layman_wrangle(dfbatting,2017)
-
-print('Batting data for 2017 with minimum at bats of MIN_AT_BATS ---------------------')
-print('\n')
-print(dfhits_2017.head(20))
-print(dfhits_2017.info())
-
-# calculate differences between fangraphs and layman data
-dfhits_diff, dfhits_val = validate_batting_data(dffangraphs_2017, dfhits_2017)
-
-print('Result of differences of statistics False means differneces--------------------')
-print('Ignore playername False -------------------------------------------------------')
-print('\n')
-result = (dfhits_diff == 0).all()
-# batting and baseball reference shows 1 game less than fangraphs.  not going to make a difference.
-print('Results of differences between batting and fangraphs...one disrepancie and printed below.  should be OK')
-print('\n')
-print(result)
-result = result.reset_index()
-result.columns = ['colnm','result']
-result = result.drop(0)
-result = list(result[result['result'] == False]['colnm'])
-print(result)
-for colnm in result:
-    print(dfhits_diff[dfhits_diff[colnm] != 0])
-
-print(dffangraphs_2017[dffangraphs_2017['playername'] == 'Daniel Robertson'])
-print(dfhits_2017[dfhits_2017['playername'] == 'Daniel Robertson'])
-print(dfhits_2017[dfhits_2017['playername'] == 'Dan Robertson'])
-# determine values which will not join due to name differences between fangraphs and layman
-print('Players in Batters but not in Fangraphs --------------------------------------')
-print('\n')
-
-x = dfhits_2017['playername']
-y = dffangraphs_2017['playername']
-z = list(set(x).difference(set(y)))
-z = sorted(z)
-for v in z:
-    print(v)
-print('Players in Fangraphs but not in Batters --------------------------------------')
-print('\n')
-z = list(set(y).difference(set(x)))
-z = sorted(z)
-for v in z:
-    print(v)
-    
-# calculate the number of players in each year that will be used going forward
-dfbatting = dfbatting[(dfbatting['AB'] >= MIN_AT_BATS)]
-dfyrcounts = dfbatting_player_stats.groupby('yearID').count()
-print(dfyrcounts['playerID'])
-dfyrcounts = dfbatting.groupby('yearID').count()
-print(dfyrcounts['playerID'])
-dfplcounts = dfbatting_player_stats.groupby('playerID').count()
-print(dfplcounts['playername'])
-print(dffangraphs_2017.info())
-print(dfhits_2017.info())
-# this comparison probably not needed.  Just making sure 2017 processing did not muck up the data which it did not.
-dfbatting = dfbatting[dfbatting['yearID'] == 2017]
-dfplayerlist1 = dfhits_2017['playerID']
-dfplayerlist2 = dfbatting['playerID']
-x = list(set(dfplayerlist1).difference(set(dfplayerlist2)))
-y = list(set(dfplayerlist2).difference(set(dfplayerlist1)))
-print(len(x))
-print(len(y))
-print(x)
-print(y)
-print('Player discrepancies can be explained are available in XLS spreadsheet--------')
-print('\n')
-print('Independent Validation END====================================================')
-print('\n')
-
-x = dfbatting_player_stats[dfbatting_player_stats['playerID'] == 'adcocjo01']['AB'].sum()
-y = dfbatting_player_stats[dfbatting_player_stats['playerID'] == 'adcocjo01']['AB'].count()
-print(x,y,x/y)
-
-
-######################################################################################
-#
 #   save dfbatting_player_stats to csv file 
 #
 ######################################################################################
@@ -591,5 +446,6 @@ print(dfbatting_player_stats)
 print(dfbatting_player_stats.info())
 
 success = save_stats_file(path,'dfbatting_player_stats.csv', dfbatting_player_stats)
+success = save_stats_file(path,'dfpitchers.csv', dfpitchers)
 
 print(success)

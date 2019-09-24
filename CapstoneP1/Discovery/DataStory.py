@@ -142,16 +142,15 @@ for line in leg.get_lines():
 # get label texts inside legend and set font size
 for text in leg.get_texts():
     text.set_fontsize('x-large')
-plt.yticks(np.arange(.500,1.000,.050))
+plt.yticks(np.arange(.650,1.000,.050))
 plb.axhline(.9000,c='C1',label='Excellent - .9000', color='#ff9999')
 plb.axhline(.8334,c='C2',label='Very Good - .8334', color='#66b3ff')
 plb.axhline(.7667,c='C3',label='Above Average - .7667', color='#99ff99')
 plb.axhline(.7000,c='C4',label='Average - .7000', color='#ffcc99')
-plb.axhline(.6334,c='C5',label='Below Average - .6334', color='#66aa99')
-plb.axhline(.5667,c='C6',label='Poor - .5667', color='#557799')
+#plb.axhline(.6334,c='C5',label='Below Average - .6334', color='#66aa99')
+#plb.axhline(.5667,c='C6',label='Poor - .5667', color='#557799')
 leg = plt.legend()
 plt.show()
-
 #
 ####################################################################################################################
 #
@@ -506,7 +505,7 @@ for line in leg.get_lines():
 for text in leg.get_texts():
     text.set_fontsize('x-large') 
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-plt.yticks(np.arange(.350,1.000,.050))
+plt.yticks(np.arange(.500,1.000,.050))
 plb.axhline(.9000,c='C1',label='Excellent - .9000', color='#ff9999')
 plb.axhline(.8334,c='C2',label='Very Good - .8334', color='#66b3ff')
 plb.axhline(.7667,c='C3',label='Above Average - .7667', color='#99ff99')
@@ -537,7 +536,7 @@ for line in leg.get_lines():
 for text in leg.get_texts():
     text.set_fontsize('x-large')
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-plt.yticks(np.arange(.350,1.000,.050))
+plt.yticks(np.arange(.500,1.000,.050))
 plb.axhline(.9000,c='C1',label='Excellent - .9000', color='#ff9999')
 plb.axhline(.8334,c='C2',label='Very Good - .8334', color='#66b3ff')
 plb.axhline(.7667,c='C3',label='Above Average - .7667', color='#99ff99')

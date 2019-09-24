@@ -112,8 +112,8 @@ dfbatting_player_stats = pd.read_csv(battingf,parse_dates=['debut','finalGame','
 
 dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut'] >= START_DATE) &
                                                 (dfbatting_player_stats['finalGame'] <= END_DATE)]
-
 df = dfbatting_player_stats
+
 ## read in file of some of the bigger contracts in MLB from 1970's to current.
 #bigcontractsf = path + bigcontractsfile
 #dfbig = pd.read_csv(bigcontractsf)
@@ -207,16 +207,20 @@ print('\n\n')
 #############################################################################################################
 #
 # Scatter plot for players playing for 12 or more years by OPS vs Age
-dfplot = df[ (df['OPS'] > .0) & (df['OPS'] <= 1.5) & (df['age'] >=  0) & (df['years_played'] >= 12) ][['OPS','age','years_played']]
-ax = dfplot.plot(kind='scatter', x='OPS',y='age',figsize=(FSHZ,7),color='#86bf91')
+dfplot = df[ (df['OPS_AVG'] >= .8334) & (df['years_played'] >= 12) & (df['OPS'] < 1.5) & (df['age'] >= 20)][['OPS','age']]
+dfplot.age = dfplot.age.round()
+#dfplot = df[ (df['OPS_AVG'] >= .866) & (df['OPS'] > .500) & (df['OPS'] < 1.4) & (df['age'] >=  28) & (df['age'] <= 50) & (df['years_played'] >= 12) ][['OPS','age','years_played','POS']]
+ax = dfplot.plot(kind='scatter',x='age',y='OPS',color='#86bf91', figsize=(FSHZ,8))
 ax.set_title('OPS vs. Age \nAll Position Players\n', weight='bold', size=14)
-ax.set_xlabel("OPS", labelpad=10, size=14)
-ax.set_ylabel("Age of Player", labelpad=10, size=14)
+ax.set_xlabel("Age of Player", labelpad=10, size=14)
+ax.set_ylabel("OPS", labelpad=10, size=14)
 for tick in ax.get_xticklabels():
     tick.set_fontsize(11)
 for tick in ax.get_yticklabels():
     tick.set_fontsize(11)
-ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+plt.yticks(np.arange(0,1.6,.1))
+plt.xticks(np.arange(20,52,1))
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
 
 sage = np.array(dfplot.age)
@@ -234,12 +238,12 @@ dfplot = calc_ops(dfplot)
 #dfplot.columns = dfplot.columns.droplevel()
 #dfplot.columns.POS = None
 dfplot = dfplot.reset_index()
-ax = dfplot.plot(kind='scatter',x='age',y='OPS',figsize=(15,8),linewidth=4,color='#86bf91')
-ax.set_title('OPS by Position by Age\nPlayers Played 12 or More Years between 28 and 40 years old\n',weight='bold', size=14)
+ax = dfplot.plot(kind='scatter',x='age',y='OPS',figsize=(FSHZ,8),linewidth=4,color='#86bf91')
+ax.set_title('Combined OPS vs. Age\nPlayers Played 12 or More Years between 28 and 40 years old\n',weight='bold', size=14)
 ax.set_xlabel("Age", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-plt.yticks(np.arange(.735,.750,.025))
+plt.yticks(np.arange(.725,.800,.025))
 plt.show()
 #calculate Pearson Coefficient
 sage = np.array(dfplot.age)
@@ -261,7 +265,7 @@ dfplot = calc_ops(dfplot)
 #dfplot.columns.POS = None
 dfplot = dfplot.reset_index()
 ax = dfplot.plot(kind='scatter',x='age',y='OPS',figsize=(15,8),linewidth=4,color='#86bf91')
-ax.set_title('OPS by Position by Age\nPlayers Played 12 or More Years between 20 and 27 years old\n',weight='bold', size=14)
+ax.set_title('Combined OPS vs. Age\nPlayers Played 12 or More Years between 20 and 27 years old\n',weight='bold', size=14)
 ax.set_xlabel("Age", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
@@ -285,7 +289,7 @@ dfplot = dfplot.reset_index()
 dfplot = calc_ops(dfplot)
 dfplot = dfplot.reset_index()
 ax = dfplot.plot(kind='scatter',x='years_played',y='OPS',figsize=(15,8),linewidth=4,color='#86bf91')
-ax.set_title('Combined OPS Years Played\n',weight='bold', size=14)
+ax.set_title('Combined OPS vs. Years Played\n',weight='bold', size=14)
 ax.set_xlabel("Years Played", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
