@@ -171,8 +171,8 @@ plt.show()
 
 probplot(data,dist="norm",plot=plb)
 _ = plt.title('QQ Plot of OPS Data\n',weight='bold', size=16)
-_ = plt.xlabel('Ordered Values', labelpad=10, size=14)
-_ = plt.ylabel('Theoritical Quantiles', labelpad=10, size = 14)
+_ = plt.ylabel('Ordered Values', labelpad=10, size=14)
+_ = plt.xlabel('Theoritical Quantiles', labelpad=10, size = 14)
 ax = plt.gca()
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.xticks(np.arange(-4,5,1))
@@ -256,8 +256,8 @@ plt.show()
 
 probplot(meanarr,dist="norm",plot=plb)
 _ = plt.title('QQ Plot of Mean of Sampling Mean Data\n',weight='bold', size=16)
-_ = plt.xlabel('Ordered Values', labelpad=10, size=14)
-_ = plt.ylabel('Theoritical Quantiles', labelpad=10, size = 14)
+_ = plt.ylabel('Ordered Values', labelpad=10, size=14)
+_ = plt.xlabel('Theoritical Quantiles', labelpad=10, size = 14)
 ax = plt.gca()
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.xticks(np.arange(-4,5,1))
@@ -343,7 +343,7 @@ pcorr = myPearson_Corr(cov, sage, sops)
 print('Pearson Correlation %.3f' % pcorr)
 
 # Scatter plot for players playing for 12 or more years by OPS vs Age 
-dfplot = df[ (df['OPS_AVG'] >= .7000) & df['OPS_AVG'] <= .7667) & (df['years_played'] >= 12) & (df['OPS'] < 1.5) & (df['age'] >= 20)][['OPS','age']]
+dfplot = df[ (df['OPS_AVG'] >= .7000) & (df['OPS_AVG'] <= .7667) & (df['years_played'] >= 12) & (df['OPS'] < 1.5) & (df['age'] >= 20)][['OPS','age']]
 dfplot.age = dfplot.age.round()
 ax = dfplot.plot(kind='scatter',x='age',y='OPS',color='#86bf91', figsize=(FSHZ,8))
 ax.set_title('OPS vs. Age\nHigh Performance Players - Years Played 12 or more Years\n', weight='bold', size=14)
@@ -423,12 +423,3 @@ sops = np.array(dfplot.OPS)
 cov = myCovariance(sage,sops)
 pcorr = myPearson_Corr(cov, sage, sops)
 print('Pearson Correlation %.3f' % pcorr)
-
-
-
-
-
-
-
-
-
