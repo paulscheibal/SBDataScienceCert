@@ -15,11 +15,12 @@ import matplotlib as mpl
 import pylab as plb
 import seaborn as sns
 import matplotlib.mlab as mlab
-import scipy.stats 
+from scipy.stats import norm
 from scipy.stats import shapiro
 from scipy.stats import anderson
 from scipy.stats import normaltest
 import math
+from numpy.random import seed
 
 sns.set()
 sns.set_style('ticks')
@@ -86,6 +87,9 @@ def myPearson_Corr(cov, xs, ys):
     pcorr = cov/(stdx * stdy)
     return pcorr
 
+def OPS_samples(OPSarr,n):
+    return np.random.choice(OPSarr, n)
+
 ## 
 #def Pearson_Corr(xs,ys):
 #    xs = np.asarray(xs)
@@ -125,14 +129,13 @@ df = dfbatting_player_stats
 #############################################################################################################
 # 
 # histogram wiht normal distribution with layman mean and standard deviation
-
 data = df[(df['OPS'] <= 1.5) & (df['OPS'] > 0.0)]
 data = np.array(data.OPS)
 mu = np.mean(data)
 sigma = np.std(data)
 _ = plt.hist(data, bins=30, alpha=0.4, density=True, color='#86bf91')
 x = np.linspace(min(data), max(data), 100)
-y = scipy.stats.norm.pdf(x, mu, sigma)
+y = norm.pdf(x, mu, sigma)
 _ = plt.plot(x, y, linewidth = 3)
 _ = plt.title('OPS Histogram with Normal Dist Overlay\n',weight='bold', size=16)
 _ = plt.xlabel('OPS', labelpad=10, size=14)
@@ -173,6 +176,15 @@ for text in leg.get_texts():
     text.set_fontsize('large')
 plt.show()
 
+stats.probplot(data,dist="norm",plot=plb)
+_ = plt.title('QQ Plot of OPS Data\n',weight='bold', size=16)
+_ = plt.xlabel('Ordered Values', labelpad=10, size=14)
+_ = plt.ylabel('Theoritical Quantiles', labelpad=10, size = 14)
+ax = plt.gca()
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+plt.xticks(np.arange(-4,5,1))
+plb.show()
+
 # perform a number of tests on layman population OPS data
 print('\n\n')
 print('Two Tests for Null Hypothesis (H0) that Layman OPS population data is Normal\n\n')
@@ -188,6 +200,91 @@ else:
 print('\n')
 # Anderson Darling test
 result = anderson(data)
+print('Anderson Darling Test:\n')
+print('Statistic: %.3f' % result.statistic)
+p = 0
+for i in range(len(result.critical_values)):
+	sl, cv = result.significance_level[i], result.critical_values[i]
+	if result.statistic < result.critical_values[i]:
+		print('%.3f: %.3f, Data looks normal (fail to reject H0)' % (sl, cv))
+	else:
+		print('%.3f: %.3f, Data does not look normal (reject H0)' % (sl, cv))
+print('\n\n')
+
+
+data = df[(df['OPS'] <= 1.5) & (df['OPS'] > 0.0)]
+data = np.array(data.OPS)
+mu = np.mean(data)
+sigma = np.std(data)
+seed(61)
+n=100000
+m=4000
+sqrtn = np.sqrt(n)
+meanarr = np.array([np.mean(OPS_samples(data,n)) for i in range(m)])
+_ = plt.hist(meanarr, bins=25, alpha=0.4, density=True, color='#86bf91')
+samplingmean = np.mean(meanarr)
+samplingsigma = sigma/sqrtn
+xmin, xmax = plt.xlim()
+x = np.linspace(xmin, xmax, 100)
+y = norm.pdf(x, samplingmean, samplingsigma)
+plt.plot(x, y, 'k', linewidth=2)
+_ = plt.title('Mean of Sampling Mean vs Normal Distritution\n',weight='bold', size=16)
+_ = plt.xlabel('OPS', labelpad=10, size=14)
+_ = plt.ylabel('Normalized Distribution Values', labelpad=10, size = 14)
+lab = 'Sampling Mean: %1.5f' % mu + ' , n = ' + str(n) + ' , m = ' + str(m)
+plb.axvline(mu,c='C1',label=lab, color='#66b3ff')
+leg = plt.legend()
+plt.show()
+
+# ECDF and norm CDF
+x_ops, y_ops = ecdf(meanarr)
+samplingmean = np.mean(x_ops)
+samplingsigma = np.std(data)/np.sqrt(n)
+sample = np.random.normal(samplingmean, samplingsigma, size=100000)
+x_n, y_n = ecdf(sample)
+_ = plt.plot(x_ops,y_ops,marker='.',linestyle='none',color='green',alpha=.6, label='Mean of Sampling Mean ECDF')
+_ = plt.plot(x_n, y_n, marker='.',linestyle='none', label = 'Normal CDF',color='darksalmon',alpha=.25)
+_ = plt.title('Mean of Sampling Mean ECDF vs CDF (Normal) OPS\n',weight='bold', size=16)
+_ = plt.xlabel('OPS', labelpad=10, size=14)
+_ = plt.ylabel('Sampling Mean vs. Normal ECDF', labelpad=10, size = 14)
+lab = 'Sampling Mean: %1.5f' % mu + ' , n = ' + str(n) + ' , m = ' + str(m)
+plb.axvline(samplingmean,label=lab, color='brown')
+leg = plt.legend()
+plt.xticks(np.arange(.6740,.6800,.0005))
+ax = plt.gca()
+ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+# get the individual lines inside legend and set line width
+for line in leg.get_lines():
+    line.set_linewidth(2)
+# get label texts inside legend and set font size
+for text in leg.get_texts():
+    text.set_fontsize('large')
+plt.show()
+
+stats.probplot(meanarr,dist="norm",plot=plb)
+_ = plt.title('QQ Plot of Mean of Sampling Mean Data\n',weight='bold', size=16)
+_ = plt.xlabel('Ordered Values', labelpad=10, size=14)
+_ = plt.ylabel('Theoritical Quantiles', labelpad=10, size = 14)
+ax = plt.gca()
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+plt.xticks(np.arange(-4,5,1))
+plb.show()
+
+# perform a number of tests on layman population OPS data
+print('\n\n')
+print('Two Tests for Null Hypothesis (H0) that Layman OPS Mean of Sample Means is Normal\n\n')
+# D'Agostinos K^2 Test
+stat, p = normaltest(meanarr)
+print('D''Agostinos K^2 Test:\n')
+print('Statistics=%.3f, p=%.3f' % (stat, p))
+alpha = 0.05
+if p < alpha:
+    print("Data does not look normal (reject H0)")
+else:
+    print("Data looks normal (fail to reject H0)")
+print('\n')
+# Anderson Darling test
+result = anderson(meanarr)
 print('Anderson Darling Test:\n')
 print('Statistic: %.3f' % result.statistic)
 p = 0
