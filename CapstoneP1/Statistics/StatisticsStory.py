@@ -19,6 +19,7 @@ from scipy.stats import norm
 from scipy.stats import shapiro
 from scipy.stats import anderson
 from scipy.stats import normaltest
+from scipy.stats import probplot
 import math
 from numpy.random import seed
 
@@ -90,21 +91,6 @@ def myPearson_Corr(cov, xs, ys):
 def OPS_samples(OPSarr,n):
     return np.random.choice(OPSarr, n)
 
-## 
-#def Pearson_Corr(xs,ys):
-#    xs = np.asarray(xs)
-#    ys = np.asarray(ys)
-#    meanx = np.mean(xs)
-#    varx = np.var(xs)
-#    meany = np.mean(ys)
-#    vary = np.var(xs)    
-#    corr = Cov(xs, ys, meanx, meany) / math.sqrt(varx * vary)
-#    return corr
-#
-#def pearson_r(x,y):
-#    corr_mat = np.corrcoef(x,y)
-#    return(corr_mat[0,1])
-
 # set figure size
 fig_size = plt.rcParams['figure.figsize']
 fig_size[0] = FSHZ
@@ -129,10 +115,17 @@ df = dfbatting_player_stats
 #############################################################################################################
 # 
 # histogram wiht normal distribution with layman mean and standard deviation
+
 data = df[(df['OPS'] <= 1.5) & (df['OPS'] > 0.0)]
 data = np.array(data.OPS)
 mu = np.mean(data)
 sigma = np.std(data)
+print('\n\n')
+print('The sample mean of the data is : %1.4f' % mu + ' with sample std dev : %1.3f' % sigma)
+print('')
+print('The size of the sample is ' + str(len(data)))
+print('\n\n')
+
 _ = plt.hist(data, bins=30, alpha=0.4, density=True, color='#86bf91')
 x = np.linspace(min(data), max(data), 100)
 y = norm.pdf(x, mu, sigma)
@@ -176,7 +169,7 @@ for text in leg.get_texts():
     text.set_fontsize('large')
 plt.show()
 
-stats.probplot(data,dist="norm",plot=plb)
+probplot(data,dist="norm",plot=plb)
 _ = plt.title('QQ Plot of OPS Data\n',weight='bold', size=16)
 _ = plt.xlabel('Ordered Values', labelpad=10, size=14)
 _ = plt.ylabel('Theoritical Quantiles', labelpad=10, size = 14)
@@ -261,7 +254,7 @@ for text in leg.get_texts():
     text.set_fontsize('large')
 plt.show()
 
-stats.probplot(meanarr,dist="norm",plot=plb)
+probplot(meanarr,dist="norm",plot=plb)
 _ = plt.title('QQ Plot of Mean of Sampling Mean Data\n',weight='bold', size=16)
 _ = plt.xlabel('Ordered Values', labelpad=10, size=14)
 _ = plt.ylabel('Theoritical Quantiles', labelpad=10, size = 14)
@@ -306,9 +299,8 @@ print('\n\n')
 # Scatter plot for players playing for 12 or more years by OPS vs Age
 dfplot = df[ (df['OPS_AVG'] >= .8334) & (df['years_played'] >= 12) & (df['OPS'] < 1.5) & (df['age'] >= 20)][['OPS','age']]
 dfplot.age = dfplot.age.round()
-#dfplot = df[ (df['OPS_AVG'] >= .866) & (df['OPS'] > .500) & (df['OPS'] < 1.4) & (df['age'] >=  28) & (df['age'] <= 50) & (df['years_played'] >= 12) ][['OPS','age','years_played','POS']]
 ax = dfplot.plot(kind='scatter',x='age',y='OPS',color='#86bf91', figsize=(FSHZ,8))
-ax.set_title('OPS vs. Age \nAll Position Players\n', weight='bold', size=14)
+ax.set_title('OPS vs. Age \nHigh Performance Players - Years Played 12 or more Years\n', weight='bold', size=14)
 ax.set_xlabel("Age of Player", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
 for tick in ax.get_xticklabels():
@@ -325,41 +317,58 @@ sops = np.array(dfplot.OPS)
 
 cov = myCovariance(sage,sops)
 pcorr = myPearson_Corr(cov, sage, sops)
-print('Pearson Correlationt Shows Weak Correlation %.3f' % pcorr)
+print('Pearson Correlation %.3f' % pcorr)
 
-# Combined OPS vs Age scatter plot; age >= 28
-dfplot = df[(df['years_played'] >= 12) & (df['age'] <= 40) & (df['age'] >= 28)][['age','POS','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
-dfplot = dfplot.groupby(['age']).sum()
-dfplot = calc_ops(dfplot)
-#dfplot = dfplot.unstack()
-#dfplot.columns = dfplot.columns.droplevel()
-#dfplot.columns.POS = None
-dfplot = dfplot.reset_index()
-ax = dfplot.plot(kind='scatter',x='age',y='OPS',figsize=(FSHZ,8),linewidth=4,color='#86bf91')
-ax.set_title('Combined OPS vs. Age\nPlayers Played 12 or More Years between 28 and 40 years old\n',weight='bold', size=14)
-ax.set_xlabel("Age", labelpad=10, size=14)
+# Scatter plot for players playing for 12 or more years by OPS vs Age (28 or older)
+dfplot = df[ (df['OPS_AVG'] >= .8334) & (df['years_played'] >= 12) & (df['OPS'] < 1.5) & (df['age'] >= 28)][['OPS','age']]
+dfplot.age = dfplot.age.round()
+ax = dfplot.plot(kind='scatter',x='age',y='OPS',color='#86bf91', figsize=(FSHZ,8))
+ax.set_title('OPS vs. Age from 28 Years Old\nHigh Performance Players - Years Played 12 or more Years\n', weight='bold', size=14)
+ax.set_xlabel("Age of Player", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
+plt.yticks(np.arange(0,1.6,.1))
+plt.xticks(np.arange(24,52,1))
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-plt.yticks(np.arange(.725,.800,.025))
 plt.show()
-#calculate Pearson Coefficient
+
 sage = np.array(dfplot.age)
 sops = np.array(dfplot.OPS)
 
-#r = pearson_r(sage,sops)
-#print('Pearson Coefficient Shows Strong Negative Correlation %.3f' % r)
+cov = myCovariance(sage,sops)
+pcorr = myPearson_Corr(cov, sage, sops)
+print('Pearson Correlation %.3f' % pcorr)
+
+# Scatter plot for players playing for 12 or more years by OPS vs Age 
+dfplot = df[ (df['OPS_AVG'] >= .7000) & df['OPS_AVG'] <= .7667) & (df['years_played'] >= 12) & (df['OPS'] < 1.5) & (df['age'] >= 20)][['OPS','age']]
+dfplot.age = dfplot.age.round()
+ax = dfplot.plot(kind='scatter',x='age',y='OPS',color='#86bf91', figsize=(FSHZ,8))
+ax.set_title('OPS vs. Age\nHigh Performance Players - Years Played 12 or more Years\n', weight='bold', size=14)
+ax.set_xlabel("Age of Player", labelpad=10, size=14)
+ax.set_ylabel("OPS", labelpad=10, size=14)
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
+plt.yticks(np.arange(0,1.6,.1))
+plt.xticks(np.arange(24,52,1))
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+plt.show()
+
+sage = np.array(dfplot.age)
+sops = np.array(dfplot.OPS)
 
 cov = myCovariance(sage,sops)
 pcorr = myPearson_Corr(cov, sage, sops)
-print('Pearson Correlation Shows Strong Negative Correlation %.3f' % pcorr)
+print('Pearson Correlation %.3f' % pcorr)
 
-# Combined OPS vs Age scatter plot; age >= 28
+# Combined OPS vs Age scatter plot; age 20 to 27
 dfplot = df[(df['years_played'] >= 12) & (df['age'] <= 27) & (df['age'] >= 20)][['age','POS','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
 dfplot = dfplot.groupby(['age']).sum()
 dfplot = calc_ops(dfplot)
-#dfplot = dfplot.unstack()
-#dfplot.columns = dfplot.columns.droplevel()
-#dfplot.columns.POS = None
 dfplot = dfplot.reset_index()
 ax = dfplot.plot(kind='scatter',x='age',y='OPS',figsize=(15,8),linewidth=4,color='#86bf91')
 ax.set_title('Combined OPS vs. Age\nPlayers Played 12 or More Years between 20 and 27 years old\n',weight='bold', size=14)
@@ -368,16 +377,31 @@ ax.set_ylabel("OPS", labelpad=10, size=14)
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.yticks(np.arange(.600,.850,.050))
 plt.show()
-#calculate Pearson Coefficient
+#calculate Pearson Correlation
 sage = np.array(dfplot.age)
 sops = np.array(dfplot.OPS)
-
-#r = pearson_r(sage,sops)
-#print('Pearson Coefficient Shows Strong Negative Correlation %.3f' % r)
-
 cov = myCovariance(sage,sops)
 pcorr = myPearson_Corr(cov, sage, sops)
-print('Pearson Correlation Shows Strong Positive Correlation %.3f' % pcorr)
+print('Pearson Correlation %.3f' % pcorr)
+
+# Combined OPS vs Age scatter plot; age >= 28
+dfplot = df[(df['years_played'] >= 12) & (df['age'] <= 40) & (df['age'] >= 28)][['age','POS','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
+dfplot = dfplot.groupby(['age']).sum()
+dfplot = calc_ops(dfplot)
+dfplot = dfplot.reset_index()
+ax = dfplot.plot(kind='scatter',x='age',y='OPS',figsize=(FSHZ,8),linewidth=4,color='#86bf91')
+ax.set_title('Combined OPS vs. Age\nPlayers Played 12 or More Years between 28 and 40 years old\n',weight='bold', size=14)
+ax.set_xlabel("Age", labelpad=10, size=14)
+ax.set_ylabel("OPS", labelpad=10, size=14)
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+plt.yticks(np.arange(.725,.800,.025))
+plt.show()
+#calculate Pearson Correlation
+sage = np.array(dfplot.age)
+sops = np.array(dfplot.OPS)
+cov = myCovariance(sage,sops)
+pcorr = myPearson_Corr(cov, sage, sops)
+print('Pearson Correlation %.3f' % pcorr)
 
 # Combined OPS vs years played of athelets between the age of 28 and 40
 dfplot = df[(df['age'] <= 40) & (df['age'] >= 28) & (df['years_played'] < 20)][['years_played','POS','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
@@ -393,14 +417,12 @@ ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.yticks(np.arange(.600,.850,.050))
 plt.xticks(np.arange(0,20,2))
 plt.show()
-
-#calculate Pearson Coefficient
+#calculate Pearson Correlation
 sage = np.array(dfplot.years_played)
 sops = np.array(dfplot.OPS)
-
 cov = myCovariance(sage,sops)
 pcorr = myPearson_Corr(cov, sage, sops)
-print('Pearson Correlation Shows Strong Positive Correlation %.3f' % pcorr)
+print('Pearson Correlation %.3f' % pcorr)
 
 
 
