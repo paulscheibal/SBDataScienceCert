@@ -9,12 +9,15 @@ Created on Tue Aug 20 11:24:24 2019
 This program is the first stage for the Capstone Project : Baseball Analysis of OPS and
 aging players.
 
-The following sources data from batting, people (players) and teams from the Layman baseball
-csv files.  The data is analyzed for missing data, data types are dealt with and then additional
-columns are added if necessary.  
+The following sources data from batting, people (players) and positions from the Layman baseball
+csv files.  Team data was loaded but it was not used in calculations.  It can always be used later.
+The data is analyzed for missing data, data types are dealt with and then additional
+columns are added if necessary.  # of base hits, SLG OBP and OPS needs to be calculated as well
+as some other statistics.  I also added Averge OPS and Years Played to the data.  
 
-An indpendent validation is performed for one year of data by accessing fangraphs data
-and comparing it to the Layman data.
+This program prints out quite a bit of information as to the wrangling that is being performed.
+
+The data is then written out to a file to be used by other programs.
 
 """
 import pandas as pd

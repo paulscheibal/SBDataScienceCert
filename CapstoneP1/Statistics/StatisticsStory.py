@@ -2,7 +2,12 @@
 """
 Created on Wed Sep 18 12:31:14 2019
 
-@author: User
+@author: Paul Scheibal
+#
+#  This program runs a set of statistical tests both statistical and visual
+#  in or to better understand the baseball batting data from 1954 to 2018
+#  I am mainly interested in OPS data
+#
 """
 
 import pandas as pd
@@ -37,17 +42,12 @@ LEGEND_PROPERTIES = {'weight':'bold'}
 
 # set path for reading Lahman baseball statistics
 path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
-bigcontractsfile = 'BigPlayerContractsMLB.csv'
 
 battingf = path + 'dfbatting_player_stats.csv'
 dfbatting_player_stats = pd.read_csv(battingf,parse_dates=['debut','finalGame','birthdate'])
 
 dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut'] >= START_DATE) &
                                                 (dfbatting_player_stats['finalGame'] <= END_DATE)]
-
-# read in file of some of the bigger contracts in MLB from 1970's to current.
-bigcontractsf = path + bigcontractsfile
-dfbig = pd.read_csv(bigcontractsf)
 
 # saves a excel file to disk from a dataframe
 def save_stats_file(path, fn, df):
@@ -90,6 +90,12 @@ def myPearson_Corr(cov, xs, ys):
 
 def OPS_samples(OPSarr,n):
     return np.random.choice(OPSarr, n)
+
+def lin_reg(x,y,type=1):
+    a, b = np.polyfit(sage, sops, type)
+    x = np.array([min(sage),max(sage)])
+    y = a * x + b
+    return a,b,x,y
 
 # set figure size
 fig_size = plt.rcParams['figure.figsize']
@@ -135,7 +141,7 @@ _ = plt.xlabel('OPS', labelpad=10, size=14)
 _ = plt.ylabel('Normalized Distribution Values', labelpad=10, size = 14)
 plt.show()
 
-# ECDF and norm CDF
+# ECDF and norma; CDF
 x_ops, y_ops = ecdf(data)
 mu = np.mean(x_ops)
 sigma = np.std(x_ops)
@@ -168,7 +174,7 @@ for line in leg.get_lines():
 for text in leg.get_texts():
     text.set_fontsize('large')
 plt.show()
-
+# plot QQ Plot to see if normal
 probplot(data,dist="norm",plot=plb)
 _ = plt.title('QQ Plot of OPS Data\n',weight='bold', size=16)
 _ = plt.ylabel('Ordered Values', labelpad=10, size=14)
@@ -204,7 +210,9 @@ for i in range(len(result.critical_values)):
 		print('%.3f: %.3f, Data does not look normal (reject H0)' % (sl, cv))
 print('\n\n')
 
-
+#
+# simulate muliple samples of OPS data using 1954 to 2017 data as sampling source
+#
 data = df[(df['OPS'] <= 1.5) & (df['OPS'] > 0.0)]
 data = np.array(data.OPS)
 mu = np.mean(data)
@@ -253,7 +261,7 @@ for line in leg.get_lines():
 for text in leg.get_texts():
     text.set_fontsize('large')
 plt.show()
-
+# plot mean of means normal dist
 probplot(meanarr,dist="norm",plot=plb)
 _ = plt.title('QQ Plot of Mean of Sampling Mean Data\n',weight='bold', size=16)
 _ = plt.ylabel('Ordered Values', labelpad=10, size=14)
@@ -310,10 +318,13 @@ for tick in ax.get_yticklabels():
 plt.yticks(np.arange(0,1.6,.1))
 plt.xticks(np.arange(20,52,1))
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-plt.show()
-
 sage = np.array(dfplot.age)
 sops = np.array(dfplot.OPS)
+a,b,x,y = lin_reg(sage,sops,1)
+print('Linear Regression (least squares) Slope = %1.3f'  % a + ' Y Intersect = %1.3f' % b)
+ax = plt.plot(x,y,label= 'Linear Regression Line')
+leg = plt.legend()
+plt.show()
 
 cov = myCovariance(sage,sops)
 pcorr = myPearson_Corr(cov, sage, sops)
@@ -333,10 +344,39 @@ for tick in ax.get_yticklabels():
 plt.yticks(np.arange(0,1.6,.1))
 plt.xticks(np.arange(24,52,1))
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-plt.show()
-
 sage = np.array(dfplot.age)
 sops = np.array(dfplot.OPS)
+a, b, x, y = lin_reg(sage,sops,1)
+print('Linear Regression (least squares) Slope = %1.3f'  % a + ' Y Intersect = %1.3f' % b)
+ax = plt.plot(x,y,label= 'Linear Regression Line')
+leg = plt.legend()
+plt.show()
+
+cov = myCovariance(sage,sops)
+pcorr = myPearson_Corr(cov, sage, sops)
+print('Pearson Correlation %.3f' % pcorr)
+
+# Scatter plot for players playing for 12 or more years by OPS vs Age (28 or older)
+dfplot = df[ (df['OPS_AVG'] >= .8334) & (df['years_played'] >= 12) & (df['OPS'] < 1.5) & (df['age'] >= 20) & (df['age'] <= 27)][['OPS','age']]
+dfplot.age = dfplot.age.round()
+ax = dfplot.plot(kind='scatter',x='age',y='OPS',color='#86bf91', figsize=(10,8))
+ax.set_title('OPS vs. Age between 20 and 27 Years Old\nHigh Performance Players - Years Played 12 or more Years\n', weight='bold', size=14)
+ax.set_xlabel("Age of Player", labelpad=10, size=14)
+ax.set_ylabel("OPS", labelpad=10, size=14)
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
+plt.yticks(np.arange(0,1.6,.1))
+plt.xticks(np.arange(19,28,1))
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+sage = np.array(dfplot.age)
+sops = np.array(dfplot.OPS)
+a, b, x, y = lin_reg(sage,sops,1)
+print('Linear Regression (least squares) Slope = %1.3f'  % a + ' Y Intersect = %1.3f' % b)
+ax = plt.plot(x,y,label= 'Linear Regression Line')
+leg = plt.legend()
+plt.show()
 
 cov = myCovariance(sage,sops)
 pcorr = myPearson_Corr(cov, sage, sops)
@@ -356,10 +396,13 @@ for tick in ax.get_yticklabels():
 plt.yticks(np.arange(0,1.6,.1))
 plt.xticks(np.arange(24,52,1))
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-plt.show()
-
 sage = np.array(dfplot.age)
 sops = np.array(dfplot.OPS)
+a, b, x, y = lin_reg(sage,sops,1)
+print('Linear Regression (least squares) Slope = %1.3f'  % a + ' Y Intersect = %1.3f' % b)
+ax = plt.plot(x,y,label= 'Linear Regression Line')
+leg = plt.legend()
+plt.show()
 
 cov = myCovariance(sage,sops)
 pcorr = myPearson_Corr(cov, sage, sops)
@@ -376,10 +419,13 @@ ax.set_xlabel("Age", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.yticks(np.arange(.600,.850,.050))
-plt.show()
-#calculate Pearson Correlation
 sage = np.array(dfplot.age)
 sops = np.array(dfplot.OPS)
+a, b, x, y = lin_reg(sage,sops,1)
+print('Linear Regression (least squares) Slope = %1.3f'  % a + ' Y Intersect = %1.3f' % b)
+ax = plt.plot(x,y,label= 'Linear Regression Line')
+leg = plt.legend()
+plt.show()
 cov = myCovariance(sage,sops)
 pcorr = myPearson_Corr(cov, sage, sops)
 print('Pearson Correlation %.3f' % pcorr)
@@ -395,10 +441,13 @@ ax.set_xlabel("Age", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.yticks(np.arange(.725,.800,.025))
-plt.show()
-#calculate Pearson Correlation
 sage = np.array(dfplot.age)
 sops = np.array(dfplot.OPS)
+a, b, x, y = lin_reg(sage,sops,1)
+print('Linear Regression (least squares) Slope = %1.3f'  % a + ' Y Intersect = %1.3f' % b)
+ax = plt.plot(x,y,label= 'Linear Regression Line')
+leg = plt.legend()
+plt.show()
 cov = myCovariance(sage,sops)
 pcorr = myPearson_Corr(cov, sage, sops)
 print('Pearson Correlation %.3f' % pcorr)
@@ -416,10 +465,22 @@ ax.set_ylabel("OPS", labelpad=10, size=14)
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.yticks(np.arange(.600,.850,.050))
 plt.xticks(np.arange(0,20,2))
-plt.show()
-#calculate Pearson Correlation
 sage = np.array(dfplot.years_played)
 sops = np.array(dfplot.OPS)
+a, b, x, y = lin_reg(sage,sops,1)
+print('Linear Regression (least squares) Slope = %1.3f'  % a + ' Y Intersect = %1.3f' % b)
+ax = plt.plot(x,y,label= 'Linear Regression Line')
+leg = plt.legend()
+plt.show()
 cov = myCovariance(sage,sops)
 pcorr = myPearson_Corr(cov, sage, sops)
 print('Pearson Correlation %.3f' % pcorr)
+
+
+
+
+
+
+
+
+

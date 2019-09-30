@@ -2,8 +2,19 @@
 """
 Created on Tue Sep 24 11:22:35 2019
 
-@author: User
+@author: Paul Scheibal
 """
+#
+#  This program validates the data from Layman and the transformations and calculations
+#  applied to layman data by using pybaseball package (fangraphs)
+#
+#  This program pretty much automated the validation. There is minimal manual work to do
+#
+#  The only manual effort is reconciling a few baseball players whose names do not match
+#  between fangraphs and layman.  For example J D Drew will not match J. D. Drew.  I have
+#  put them in a excel document along with their OPS. That way OPS can be used to align them
+#  It is a very minor effort.
+#
 
 import pandas as pd
 import numpy as np

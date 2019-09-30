@@ -1,3 +1,16 @@
+"""
+Created on Tue Sep 2 9:20:55 2019
+#
+# Author : Paul Scheibal
+# 
+#  This program visualy shows baseball data collected from 1954 to current
+#  It shows various different types of plots
+#
+#  It also looks at 21 top contracts in MLB and charts their OPS prior to signing, at 
+#  signing and post signing.
+#
+"""
+
 import pandas as pd
 import numpy as np
 from datetime import datetime
