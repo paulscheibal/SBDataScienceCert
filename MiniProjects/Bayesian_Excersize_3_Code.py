@@ -58,7 +58,7 @@ with pm.Model() as model:
     rate_ = pm.Exponential("rate_", rate_est)
     obs = pm.Gamma("obs", alpha_, rate_, observed=no_insurance)
     step = pm.Metropolis()
-    trace = pm.sample(10000,step=step,cores=1)
+    trace = pm.sample(30000,step=step,cores=1)
 
 print(trace.varnames)
 print(pm.summary(trace))
@@ -66,16 +66,120 @@ print(pm.summary(trace))
 trace_alpha = trace['alpha_']
 trace_rate  = trace['rate_']
 
-sns.distplot(trace_alpha)
+print('\n')
+print('alpha distplot with 2.5 and 97.5 percentiles...')
+print('\n')
+
+p_vals_alpha = np.percentile(trace_alpha,[2.5, 97.5])
+label0 = '2.5% left CI value: '
+label0 = label0 + '%1.2f' % p_vals_alpha[0]
+label1 = '97.5% right CI value: '
+label1 = label1 + '%1.2f' % p_vals_alpha[1]
+_ = sns.distplot(trace_alpha)
+_ = plt.title('Alpha Distribution')
+_ = plt.xlabel('Alpha')
+_ = plt.ylabel('Frequency')
+_ = plt.axvline(p_vals_alpha[0],label=label0,color='green')
+_ = plt.axvline(p_vals_alpha[1],label=label1,color='red')
+_ = plt.legend()
 plt.show()
-sns.distplot(trace_rate)
+
+print('\n')
+print('rate distplot with 2.5 and 97.5 percentiles...')
+print('\n')
+
+p_vals_rate = np.percentile(trace_rate,[2.5, 97.5])
+label0 = '2.5% left CI value: '
+label0 = label0 + '%1.5f' % p_vals_rate[0]
+label1 = '97.5% right CI value: '
+label1 = label1 + '%1.5f' % p_vals_rate[1]
+_ = sns.distplot(trace_rate)
+_ = plt.title('Rate Distribution')
+_ = plt.xlabel('Rate')
+_ = plt.ylabel('Frequency')
+_ = plt.axvline(p_vals_rate[0],label=label0,color='green')
+_ = plt.axvline(p_vals_rate[1],label=label1,color='red')
+_ = plt.legend()
 plt.show()
 
 
-
+print('traceplot, plot_posterior and autocorrplot...')
+print('\n')
+print('traceplot...')
+print('\n')
 pm.plots.traceplot(trace,['alpha_', 'rate_'])
+plt.show()
+print('\n')
+print('plot_posterior...')
+print('\n')
 pm.plots.plot_posterior(trace,['alpha_'],credible_interval=.95)
 pm.plots.plot_posterior(trace,['rate_'],credible_interval=.95)
+plt.show()
+print('\n')
+print('autocorrplot...')
+print('\n')
 pm.plots.autocorrplot(trace,['alpha_'])
 pm.plots.autocorrplot(trace,['rate_'])
 plt.show()
+
+gw_plot1 = pm.geweke(trace['alpha_'])
+gw_plot2 = pm.geweke(trace['rate_'])
+print(gw_plot1)
+print(gw_plot2)
+plt.scatter(gw_plot1[:,0],gw_plot1[:,1])
+plt.axhline(-1.98, c='r')
+plt.axhline(1.98, c='r')
+plt.ylim(-2.5,2.5)
+plt.title('Geweke Plot Comparing first 10% and Slices of the Last 50% of Chain')
+plt.xlim(-10,30000)
+plt.show()
+
+plt.scatter(gw_plot2[:,0],gw_plot2[:,1])
+plt.axhline(-1.98, c='r')
+plt.axhline(1.98, c='r')
+plt.ylim(-2.5,2.5)
+plt.title('Geweke Plot Comparing first 10% and Slices of the Last 50% of Chain')
+plt.xlim(-10,30000)
+plt.show()
+
+gw_plot1 = pm.geweke(trace['alpha_'],.001,.5,20)
+gw_plot2 = pm.geweke(trace['rate_'],.001,.5,20)
+
+plt.scatter(gw_plot1[:,0],gw_plot1[:,1])
+plt.axhline(-1.98, c='r')
+plt.axhline(1.98, c='r')
+plt.ylim(-2.5,2.5)
+plt.title('Geweke Plot Comparing first .1% and Slices of the Last 50% of Chain')
+plt.xlim(-10,30000)
+plt.show()
+
+plt.scatter(gw_plot2[:,0],gw_plot2[:,1])
+plt.axhline(-1.98, c='r')
+plt.axhline(1.98, c='r')
+plt.ylim(-2.5,2.5)
+plt.title('Geweke Plot Comparing first .1% and Slices of the Last 50% of Chain')
+plt.xlim(-10,30000)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
