@@ -55,6 +55,8 @@ dfbatting_player_stats = pd.read_csv(battingf,parse_dates=['debut','finalGame','
 dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut'] >= START_DATE) &
                                                 (dfbatting_player_stats['finalGame'] <= END_DATE)]
 
+df = dfbatting_player_stats
+
 # saves a excel file to disk from a dataframe
 def save_stats_file(path, fn, df):
     stf = path + fn
@@ -167,13 +169,6 @@ fig_size = plt.rcParams['figure.figsize']
 fig_size[0] = FSHZ
 fig_size[1] = 9
 plt.rcParams["figure.figsize"] = fig_size
-
-battingf = path + 'dfbatting_player_stats.csv'
-dfbatting_player_stats = pd.read_csv(battingf,parse_dates=['debut','finalGame','birthdate'])
-
-dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut'] >= START_DATE) &
-                                                (dfbatting_player_stats['finalGame'] <= END_DATE)]
-df = dfbatting_player_stats
 
 ## read in file of some of the bigger contracts in MLB from 1970's to current.
 #bigcontractsf = path + bigcontractsfile
@@ -322,9 +317,9 @@ _ = plt.ylabel('Sampling Mean vs. Normal ECDF', labelpad=10, size = 14)
 lab = 'Sampling Mean: %1.5f' % samplingmean + ' , n = ' + str(n) + ' , m = ' + str(m)
 lab1 = 'Conf Interval 2.5 ( %1.5f' % conf_int[0] + ' )'
 lab2 = 'Conf Interval 97.5 ( %1.5f' % conf_int[1] + ' )'
-plb.axvline(samplingmean,c='C1',label=lab, color='brown')
-plb.axvline(conf_int[0],c='C2',label=lab1, color='blue')
-plb.axvline(conf_int[1],c='C3',label=lab2, color='blue')
+plb.axvline(samplingmean,label=lab, color='brown')
+plb.axvline(conf_int[0],label=lab1, color='blue')
+plb.axvline(conf_int[1],label=lab2, color='blue')
 leg = plt.legend()
 plt.xticks(np.arange(.671,.682,.002))
 ax = plt.gca()
@@ -456,7 +451,7 @@ plt.show()
 # perform a number of tests on layman population OPS data
 meanarr = data
 print('\n\n')
-print('Two Tests for Null Hypothesis (H0) that Layman OPS Mean of Sample Means is Normal\n\n')
+print('Two Tests for Null Hypothesis (H0) that Layman combined (calulated) OPS of Sample is Normal\n\n')
 # D'Agostinos K^2 Test
 stat, p = normaltest(meanarr)
 print('D''Agostinos K^2 Test:\n')
