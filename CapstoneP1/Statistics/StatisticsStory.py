@@ -484,6 +484,11 @@ print('\n\n')
 #
 # Scatter plot for players playing for 12 or more years by OPS vs Age (.8334 AVG OPS or greater)
 #
+
+dfps = df[df['playerID'] == 'goldspa01']
+xps = dfps.age
+yps = dfps.OPS
+
 dfplot = df[ (df['OPS_AVG'] >= .8334) & (df['years_played'] >= 12) & (df['OPS'] <= 1.5) & (df['age'] >= 20)][['OPS','age']]
 dfplot.age = dfplot.age.round()
 ax = dfplot.plot(kind='scatter',x='age',y='OPS',color='#86bf91', figsize=(FSHZ,8),label='Players with Avg OPS of .8334 or Greater')
@@ -503,6 +508,7 @@ type = 3
 coef,x,y = calc_poly(sage,sops,type)
 #dfxy = pd.DataFrame(xs,ys)
 plt.plot(x,y,label= 'Polynomial Fit Type %1.f' % type, linewidth=7)
+plt.plot(xps,yps,label='Paul Goldschmidt OPS Trend', marker='.', linestyle='none',markersize=12,color='red')
 leg = plt.legend()
 plt.show()
 
