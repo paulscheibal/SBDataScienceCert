@@ -19,6 +19,7 @@ This program prints out quite a bit of information as to the wrangling that is b
 
 The data is then written out to a file to be used by other programs.
 
+1:29PM 10/18/2019 FIX Applied - Calculating Age wrong.  Adding 1 instead of subtracting 1.  Off by 2 years.
 """
 import pandas as pd
 import numpy as np
@@ -419,8 +420,8 @@ print(dfbatting_player_stats.info())
 print(dfbatting_player_stats[['yearID','playerID','playername','years_played']])
 print(dfbatting_player_stats[['yearID','playerID','playername','avg_yrly_AB']])
 
-# calculate age of player during that year in play.  Since later part of year is when teams play...added 1 to year.
-dfbatting_player_stats['age'] = dfbatting_player_stats['yearID'] - pd.DatetimeIndex(dfbatting_player_stats['birthdate']).year + 1
+# calculate age of player during that year in play.  Since later part of year is when teams play...subtracted 1 from year.
+dfbatting_player_stats['age'] = dfbatting_player_stats['yearID'] - pd.DatetimeIndex(dfbatting_player_stats['birthdate']).year - 1
 
 print(dfbatting_player_stats.head(20))
 print(dfbatting_player_stats.info(20))
@@ -452,3 +453,4 @@ success = save_stats_file(path,'dfbatting_player_stats.csv', dfbatting_player_st
 success = save_stats_file(path,'dfpitchers.csv', dfpitchers)
 
 print(success)
+
