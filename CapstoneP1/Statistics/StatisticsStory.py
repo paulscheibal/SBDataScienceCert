@@ -521,10 +521,14 @@ pcorr = myPearson_Corr(cov, sage, sops)
 print('Pearson Correlation %.3f' % pcorr)
 
 # Scatter plot for players playing for 12 or more years by OPS vs Age 
-dfplot = df[ (df['OPS_AVG'] >= .7667) & (df['OPS_AVG'] <= .8333) & (df['years_played'] >= 12) & (df['OPS'] <= 1.5) & (df['age'] >= 20)][['OPS','age']]
+dfym = df[df['playerID'] == 'molinya01']
+xym = dfym.age
+yym = dfym.OPS
+
+dfplot = df[ (df['OPS_AVG'] >= .7000) & (df['OPS_AVG'] <= .7666) & (df['years_played'] >= 12) & (df['OPS'] <= 1.5) & (df['age'] >= 20)][['OPS','age']]
 dfplot.age = dfplot.age.round()
 ax = dfplot.plot(kind='scatter',x='age',y='OPS',color='#86bf91', figsize=(FSHZ,8), label='Players with Avg OPS of .7667 to .8333')
-ax.set_title('OPS vs. Age\nAbove Average Players - Years Played 12 or more Years\n', weight='bold', size=14)
+ax.set_title('OPS vs. Age\nAverage Players - Years Played 12 or more Years\n', weight='bold', size=14)
 ax.set_xlabel("Age of Player", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
 for tick in ax.get_xticklabels():
@@ -540,6 +544,11 @@ type = 3
 coef,x,y = calc_poly(sage,sops,type)
 #dfxy = pd.DataFrame(xs,ys)
 plt.plot(x,y,label= 'Polynomial Fit Type %1.f' % type, linewidth=7)
+plt.plot(xym,yym,label='Yadier Molina OPS Trend', marker='.', linestyle='none',markersize=12,color='red')
+plb.axhline(.9000,c='C1',label='Excellent - .9000', color='#ff9999')
+plb.axhline(.8334,c='C2',label='Very Good - .8334', color='#66b3ff')
+plb.axhline(.7667,c='C3',label='Above Average - .7667', color='#99ff99')
+plb.axhline(.7000,c='C4',label='Average - .7000', color='#ffcc99')
 leg = plt.legend()
 plt.show()
 
