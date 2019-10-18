@@ -489,7 +489,7 @@ dfps = df[df['playerID'] == 'goldspa01']
 xps = dfps.age
 yps = dfps.OPS
 
-dfplot = df[ (df['OPS_AVG'] >= .8334) & (df['years_played'] >= 12) & (df['OPS'] <= 1.5) & (df['age'] >= 20)][['OPS','age']]
+dfplot = df[ (df['OPS_AVG'] >= .8334) & (df['years_played'] >= 12) & (df['OPS'] <= 1.5) &  (df['age'] >= 20)][['OPS','age']]
 dfplot.age = dfplot.age.round()
 ax = dfplot.plot(kind='scatter',x='age',y='OPS',color='#86bf91', figsize=(FSHZ,8),label='Players with Avg OPS of .8334 or Greater')
 ax.set_title('OPS vs. Age \nHigh Performance Players - Years Played 12 or more Years\n', weight='bold', size=14)
@@ -501,7 +501,7 @@ for tick in ax.get_yticklabels():
     tick.set_fontsize(11)
 sage = np.array(dfplot.age)
 sops = np.array(dfplot.OPS)
-plt.yticks(np.arange(0,1.6,.1))
+plt.yticks(np.arange(.0,1.6,.1))
 plt.xticks(np.arange(min(sage),max(sage),1))
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 type = 3
@@ -509,6 +509,10 @@ coef,x,y = calc_poly(sage,sops,type)
 #dfxy = pd.DataFrame(xs,ys)
 plt.plot(x,y,label= 'Polynomial Fit Type %1.f' % type, linewidth=7)
 plt.plot(xps,yps,label='Paul Goldschmidt OPS Trend', marker='.', linestyle='none',markersize=12,color='red')
+plb.axhline(.9000,c='C1',label='Excellent - .9000', color='#ff9999')
+plb.axhline(.8334,c='C2',label='Very Good - .8334', color='#66b3ff')
+plb.axhline(.7667,c='C3',label='Above Average - .7667', color='#99ff99')
+plb.axhline(.7000,c='C4',label='Average - .7000', color='#ffcc99')
 leg = plt.legend()
 plt.show()
 
