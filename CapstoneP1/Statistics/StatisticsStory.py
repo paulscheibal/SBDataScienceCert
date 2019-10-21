@@ -81,11 +81,11 @@ def ecdf(data):
     return x,y    
 
 #covariance calculation
-def myCovariance(xs, ys):
-    meanx = np.mean(xs)
-    meany = np.mean(ys)
-    n = len(xs)
-    prod = (xs - meanx) * (ys - meany)
+def myCovariance(xcv, ycv):
+    meanx = np.mean(xcv)
+    meany = np.mean(ycv)
+    n = len(xcv)
+    prod = (xcv - meanx) * (ycv - meany)
     cov = sum(prod) / n
     return cov
 
@@ -176,11 +176,11 @@ plt.rcParams["figure.figsize"] = fig_size
 #
 #############################################################################################################
 #
-#  plot the histogram from layman data against the normal distribution and layman ECDF against the norm CDF
+#  plot the histogram from Lahman data against the normal distribution and Lahman ECDF against the norm CDF
 #
 #############################################################################################################
 # 
-# histogram wiht normal distribution with layman mean and standard deviation
+# histogram wiht normal distribution with Lahman mean and standard deviation
 
 df = df[(df['OPS'] <= 1.5) & (df['OPS'] > 0.0)]
 data = np.array(df.OPS)
@@ -192,7 +192,7 @@ print('The sample mean of the data is : %1.4f' % mu + ' with sample std dev : %1
 print('')
 print('The size of the sample is ' + str(len(data)))
 print('\n\n')
-
+fig, ax = plt.subplots()
 _ = plt.hist(data, bins=30, alpha=0.4, density=True, color='#86bf91')
 x = np.linspace(min(data), max(data), 100)
 y = norm.pdf(x, mu, sigma)
@@ -200,6 +200,7 @@ _ = plt.plot(x, y, linewidth = 3)
 _ = plt.title('OPS Histogram with Normal Dist Overlay\n',weight='bold', size=16)
 _ = plt.xlabel('OPS', labelpad=10, size=14)
 _ = plt.ylabel('Normalized Distribution Values', labelpad=10, size = 14)
+ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
 
 # ECDF and norma; CDF
@@ -208,12 +209,12 @@ sample = np.random.normal(mu, sigma, size=100000)
 x_n, y_n = ecdf(sample)
 ptiles = np.array([20.7,34.5,53.4,72.2,86.1,93.8])
 ptiles_vals = np.percentile(x_ops,ptiles)
-_ = plt.plot(x_ops,y_ops,marker='.',linestyle='none',color='green', label='Layman Data ECDF')
+_ = plt.plot(x_ops,y_ops,marker='.',linestyle='none',color='green', label='Lahman Data ECDF')
 _ = plt.plot(x_n, y_n, marker='.',linestyle='none', label = 'Normal CDF',color='darksalmon')
 _ = plt.plot(ptiles_vals, ptiles/100,marker='D',color='red',linestyle='none', label='OPS Percentiles')
 _ = plt.title('ECDF vs CDF (Normal) OPS\n',weight='bold', size=16)
 _ = plt.xlabel('OPS', labelpad=10, size=14)
-_ = plt.ylabel('Layman Data vs. Normal ECDF', labelpad=10, size = 14)
+_ = plt.ylabel('Lahman Data vs. Normal ECDF', labelpad=10, size = 14)
 ptiles_str =  [str( '%1.3f' % ptiles_vals[i] ) for i in range(0,len(ptiles))]
 ptiles_leg = [str(ptiles[i]) + ' Percentile (OPS = ' + ptiles_str[i] + ')' for i in range(0,len(ptiles))]
 plb.axvline(ptiles_vals[5],c='C1',label=ptiles_leg[5] + ' Excellent', color='#ff9999')
@@ -244,9 +245,9 @@ ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.xticks(np.arange(-4,5,1))
 plb.show()
 
-# perform a number of tests on layman population OPS data
+# perform a number of tests on Lahman population OPS data
 print('\n\n')
-print('Two Tests for Null Hypothesis (H0) that Layman OPS population data is Normal\n\n')
+print('Two Tests for Null Hypothesis (H0) that Lahman OPS population data is Normal\n\n')
 # D'Agostinos K^2 Test
 stat, p = normaltest(data)
 print('D''Agostinos K^2 Test:\n')
@@ -281,7 +282,7 @@ data = np.array(data.OPS)
 seed(61)
 n=len(data)
 
-m=2000
+m=20
 
 sqrtn = np.sqrt(n)
 meanarr = np.array([np.mean(OPS_samples(data)) for i in range(m)])
@@ -302,6 +303,7 @@ lab2 = 'Conf Interval 97.5 ( %1.5f' % conf_int[1] + ' )'
 plb.axvline(samplingmean,label=lab, color='brown')
 plb.axvline(conf_int[0], label=lab1, color='blue')
 plb.axvline(conf_int[1], label=lab2, color='blue')
+ax.tick_params(axis='both', which='major', labelsize=12)
 leg = plt.legend()
 plt.show()
 
@@ -324,6 +326,7 @@ leg = plt.legend()
 plt.xticks(np.arange(.671,.682,.002))
 ax = plt.gca()
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+ax.tick_params(axis='both', which='major', labelsize=12)
 # get the individual lines inside legend and set line width
 for line in leg.get_lines():
     line.set_linewidth(2)
@@ -341,9 +344,9 @@ ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.xticks(np.arange(-4,5,1))
 plb.show()
 
-# perform a number of tests on layman population OPS data
+# perform a number of tests on Lahman population OPS data
 print('\n\n')
-print('Two Tests for Null Hypothesis (H0) that Layman OPS Mean of Sample Means is Normal\n\n')
+print('Two Tests for Null Hypothesis (H0) that Lahman OPS Mean of Sample Means is Normal\n\n')
 # D'Agostinos K^2 Test
 stat, p = normaltest(meanarr)
 print('D''Agostinos K^2 Test:\n')
@@ -376,7 +379,7 @@ print('\n\n')
 # use the same seed each time
 seed(61)
 
-m=20
+m=2000
 
 data = np.array([bootstrap_replicate_wr(df,OPS_val) for i in range(m)])
 samplingmean = round(np.mean(data),5)
@@ -400,6 +403,7 @@ plb.axvline(ptiles_vals[1],label=label1, color='blue')
 #plb.axvline(OPSsteroid,label=labelst, color='red')
 #plb.axvline(OPSpost,label=labelps, color='black')
 plb.axvline(samplingmean,label=labelm, color='brown')
+ax.tick_params(axis='both', which='major', labelsize=12)
 leg = plt.legend()
 plt.show()
 
@@ -408,11 +412,11 @@ sample = np.random.normal(samplingmean, samplingsigma, size=10000)
 ptiles = [2.5, 97.5]
 ptiles_vals = np.percentile(x_ops,ptiles)
 x_n, y_n = ecdf(sample)
-plt.plot(x_ops,y_ops,marker='.',linestyle='none',color='green', markersize = 12,label='Layman Data ECDF')
+plt.plot(x_ops,y_ops,marker='.',linestyle='none',color='green', markersize = 12,label='Lahman Data ECDF')
 plt.plot(x_n, y_n, marker='.',linestyle='none',color='darksalmon', markersize = 10, label = 'Normal CDF')
 plt.title('ECDF vs CDF (Normal) OPS\n',weight='bold', size=16)
 plt.xlabel('OPS', labelpad=10, size=14)
-plt.ylabel('Layman Data vs. Normal ECDF', labelpad=10, size = 14)
+plt.ylabel('Lahman Data vs. Normal ECDF', labelpad=10, size = 14)
 label0 = 'Percentile 2.5 is %1.3f' % ptiles_vals[0]
 label1 = 'Percentile 97.5 is %1.3f' % ptiles_vals[1]
 labelm = 'Mean %1.3f' % samplingmean
@@ -422,6 +426,7 @@ plb.axvline(samplingmean,label=labelm, color='brown')
 plt.xticks(np.arange(.735,.742,.001))
 ax = plt.gca()
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+ax.tick_params(axis='both', which='major', labelsize=12)
 leg = plt.legend()
 # get the individual lines inside legend and set line width
 for line in leg.get_lines():
@@ -445,13 +450,14 @@ plb.axhline(ptiles_vals[1],label=label1, color='blue')
 plb.axhline(samplingmean,label=labelm, color='brown')
 leg = plt.legend()
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+ax.tick_params(axis='both', which='major', labelsize=12)
 plt.xticks(np.arange(-4,5,1))
 plt.show()
 
-# perform a number of tests on layman population OPS data
+# perform a number of tests on Lahman population OPS data
 meanarr = data
 print('\n\n')
-print('Two Tests for Null Hypothesis (H0) that Layman combined (calulated) OPS of Sample is Normal\n\n')
+print('Two Tests for Null Hypothesis (H0) that Lahman combined (calulated) OPS of Sample is Normal\n\n')
 # D'Agostinos K^2 Test
 stat, p = normaltest(meanarr)
 print('D''Agostinos K^2 Test:\n')
@@ -513,6 +519,7 @@ plb.axhline(.9000,c='C1',label='Excellent - .9000', color='#ff9999')
 plb.axhline(.8334,c='C2',label='Very Good - .8334', color='#66b3ff')
 plb.axhline(.7667,c='C3',label='Above Average - .7667', color='#99ff99')
 plb.axhline(.7000,c='C4',label='Average - .7000', color='#ffcc99')
+ax.tick_params(axis='both', which='major', labelsize=12)
 leg = plt.legend()
 plt.show()
 
@@ -552,6 +559,7 @@ plb.axhline(.8334,c='C2',label='Very Good - .8334', color='#66b3ff')
 plb.axhline(.7667,c='C3',label='Above Average - .7667', color='#99ff99')
 plb.axhline(.7000,c='C4',label='Average - .7000', color='#ffcc99')
 plb.axhline(.6334,c='C4',label='Below Average - .6334', color='#ff9999')
+ax.tick_params(axis='both', which='major', labelsize=12)
 leg = plt.legend()
 plt.show()
 
@@ -567,7 +575,8 @@ dfplot = dfplot.groupby(['years_played']).sum()
 dfplot = dfplot.reset_index()
 dfplot = calc_ops(dfplot)
 dfplot = dfplot.reset_index()
-ax = dfplot.plot(kind='scatter',x='years_played',y='OPS',figsize=(15,8),linewidth=4,color='#86bf91', label='Years Played')
+fig, ax = plt.subplots()
+dfplot.plot(kind='scatter',x='years_played',y='OPS',figsize=(15,8),linewidth=4,color='#86bf91', label='Years Played', ax=ax)
 ax.set_title('Combined OPS vs. Years Played\n',weight='bold', size=14)
 ax.set_xlabel("Years Played", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
@@ -578,9 +587,11 @@ plt.yticks(np.arange(.200,1.500,.050))
 plt.xticks(np.arange(min(syp), max(syp) + 1,1))
 type = 1
 coef,x,y = calc_poly(syp,sops,type)
-ax = plt.plot(x,y,label= 'Polynomial Fit Type %1.f' % type, linewidth=7)
+plt.plot(x,y,label= 'Polynomial Fit Type %1.f' % type, linewidth=7)
+ax.tick_params(axis='both', which='major', labelsize=12)
 leg = plt.legend()
 plt.show()
+
 cov = myCovariance(syp,sops)
 pcorr = myPearson_Corr(cov, syp, sops)
 print('Pearson Correlation %.3f' % pcorr)
@@ -774,12 +785,14 @@ plt.ylabel('ECDF', labelpad=10, size = 14)
 plt.xticks(np.arange(.630,.83,.01))
 ax = plt.gca()
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+ax.tick_params(axis='both', which='major', labelsize=12)
 # get the individual lines inside legend and set line width
 for line in leg.get_lines():
     line.set_linewidth(2)
 # get label texts inside legend and set font size
 for text in leg.get_texts():
     text.set_fontsize('large')
+plt.xticks(rotation=45)
 plt.show()
 #
 # set up dfplot data frame for time series analysis
@@ -849,10 +862,11 @@ ax.plot(dfplot.yearID, dfplot['OPS'], marker='.', linestyle='none',markersize=14
 plt.yticks(np.arange(.400,.900,.020))
 plt.xticks(np.arange(min(syr),max(syr)+5,5))
 #ax = dfplot.plot(kind='line',x='yearID',figsize=(FSHZ,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
-type = 4
+type = 20
 coef,x,y = calc_poly(syr,sops,type)
 plt.plot(x,y,label= 'Polynomial Fit Type %1.f' % type, linewidth=5)
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+ax.tick_params(axis='both', which='major', labelsize=12)
 plt.xticks(rotation=45)
 leg = plt.legend()
 plt.show()
@@ -872,6 +886,7 @@ for line in leg.get_lines():
 for text in leg.get_texts():
     text.set_fontsize('x-large')
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.2f}'))
+ax.tick_params(axis='both', which='major', labelsize=12)
 #plt.yticks(np.arange())
 plt.xticks(rotation=45)
 plt.show()
@@ -910,6 +925,7 @@ ax.set_ylabel("OPS", labelpad=10, size=14)
 plt.axvline(1993,label='Steroid Era Start - 1993',color='green')
 plt.axvline(2004,label='Steroid Era End - 2003',color='green')
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+ax.tick_params(axis='both', which='major', labelsize=12)
 plt.legend(loc='upper left')
 plt.show()
 #
@@ -936,6 +952,7 @@ ax.scatter(a['yearID'],a['OPS'], color='red', label='Anomaly')
 plt.axvline(1993,label='Steroid Era Start - 1993',color='green')
 plt.axvline(2004,label='Steroid Era End - 2004',color='green')
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+ax.tick_params(axis='both', which='major', labelsize=12)
 plt.legend(loc='upper left')
 plt.show()
 

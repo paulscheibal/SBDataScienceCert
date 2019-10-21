@@ -5,13 +5,13 @@ Created on Tue Sep 24 11:22:35 2019
 @author: Paul Scheibal
 """
 #
-#  This program validates the data from Layman and the transformations and calculations
-#  applied to layman data by using pybaseball package (fangraphs)
+#  This program validates the data from Lahman and the transformations and calculations
+#  applied to Lahman data by using pybaseball package (fangraphs)
 #
 #  This program pretty much automated the validation. There is minimal manual work to do
 #
 #  The only manual effort is reconciling a few baseball players whose names do not match
-#  between fangraphs and layman.  For example J D Drew will not match J. D. Drew.  I have
+#  between fangraphs and Lahman.  For example J D Drew will not match J. D. Drew.  I have
 #  put them in a excel document along with their OPS. That way OPS can be used to align them
 #  It is a very minor effort.
 #
@@ -48,7 +48,7 @@ def get_pitcher_list(year,dfp):
     lstpitcher = list(dfp['playername'].drop_duplicates())
     return lstpitcher
 
-# function to calculate differences between fangraphs and layman
+# function to calculate differences between fangraphs and Lahman
 def validate_batting_data(dffangraphs, dfhits):
     dfhits_val = pd.merge(dfhits,dffangraphs,on='playername')
     dfhits_diff = pd.DataFrame()
@@ -82,7 +82,7 @@ def calc_ops(df):
     df['AVG'] = df['H'] / df['AB']
     return  df
 
-# function to take a year of data and put it in format to do comparisons with layman data
+# function to take a year of data and put it in format to do comparisons with Lahman data
 def fangraphs_wrangle(dffangraphs):
     dffangraphs = dffangraphs[['Name','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']]
     convert_dict = {
@@ -127,19 +127,19 @@ def get_fangraph_year(year,dfp,force_API=False):
     return dffangraphs
 
 # function to take a year of data and put it in format to do comparisons to fangraphs data
-def layman_wrangle(dfbatting,year):
+def Lahman_wrangle(dfbatting,year):
     # filter on AB for minimum at bats.  dfbatting is a copy of dfbatting_player_stats prior to filtering avg_yrly_AB
     dfhits_playersval = dfbatting[dfbatting['AB'] >= MIN_AT_BATS]
     dfhitsyr = dfhits_playersval[(dfhits_playersval['yearID'] == year)][['playername','playerID','G','AB','H','2B','3B','HR','SF','BB','HBP','OBP','SLG','OPS']]
     dfhitsyr = dfhitsyr.reset_index(drop=True)
     return(dfhitsyr)
 
-def calc_diff_layman_fangraphs(year,df,dfp):
+def calc_diff_Lahman_fangraphs(year,df,dfp):
     # get year of fangraphs data for year
     dffangraphs = get_fangraph_year(year,dfp,force_API=False)
-    #get data from layman data for comparison to fangraphs
-    dfhits = layman_wrangle(df,year)
-    # calculate differences between fangraphs and layman data
+    #get data from Lahman data for comparison to fangraphs
+    dfhits = Lahman_wrangle(df,year)
+    # calculate differences between fangraphs and Lahman data
     dfhits_diff, dfhits_val = validate_batting_data(dffangraphs, dfhits)
 
     # anything not zero need to verity
@@ -160,7 +160,7 @@ def calc_diff_layman_fangraphs(year,df,dfp):
     #output differences to differences file
     diffile = 'dfdiffs_' + str(year) + '.csv'
     success = save_stats_file(path,diffile,dfdiffall)
-    # find discrepancies between player names between fangraphs and layman 
+    # find discrepancies between player names between fangraphs and Lahman 
     fanmiss, laymiss = player_name_discrepancies(dffangraphs, dfhits)
     dffanmiss = pd.DataFrame([fanmiss])
     dflaymiss = pd.DataFrame([laymiss])
@@ -171,19 +171,19 @@ def calc_diff_layman_fangraphs(year,df,dfp):
     dffanmiss = pd.merge(dffanmiss,dfhits[['playername','OPS']], on='playername')
     dflaymiss = pd.merge(dflaymiss,dffangraphs[['playername','OPS']], on='playername')
     dfmiss = pd.concat([dffanmiss,dflaymiss], axis=1,sort=True)
-    dfmiss.columns = ['Fangraphs Missing','Lay OPS','Layman Missing','Fan OPS']
+    dfmiss.columns = ['Fangraphs Missing','Lay OPS','Lahman Missing','Fan OPS']
     dfmiss = dfmiss.replace(np.NaN,'Missing')
     missfile = 'playersmissing_' + str(year) + '.csv'
     success = save_stats_file(path,missfile,dfmiss)
     return success
 
 def player_name_discrepancies(dffangraphs, dfhits):
-    # players in layman but not in fangraphs
+    # players in Lahman but not in fangraphs
     x = dfhits['playername']
     y = dffangraphs['playername']
     z1 = list(set(x).difference(set(y)))
     z1 = sorted(z1)
-    # players in fangraphs but not in layman
+    # players in fangraphs but not in Lahman
     z2 = list(set(y).difference(set(x)))
     z2 = sorted(z2)
     return z1, z2
@@ -204,17 +204,17 @@ df = dfbatting_player_stats
 
 ######################################################################################
 #
-#   verify one year of data using Layman package and using fangraphs API
+#   verify one year of data using Lahman package and using fangraphs API
 #   The batting_stats function returns season-level batting data from FanGraphs
 #   This can be run for many years
 #
 ######################################################################################
 
-result = calc_diff_layman_fangraphs(2017,df,dfpitchers)
-result = calc_diff_layman_fangraphs(2011,df,dfpitchers)
-result = calc_diff_layman_fangraphs(2005,df,dfpitchers)
-result = calc_diff_layman_fangraphs(1999,df,dfpitchers)
-result = calc_diff_layman_fangraphs(1982,df,dfpitchers)
-result = calc_diff_layman_fangraphs(1976,df,dfpitchers)
+result = calc_diff_Lahman_fangraphs(2017,df,dfpitchers)
+result = calc_diff_Lahman_fangraphs(2011,df,dfpitchers)
+result = calc_diff_Lahman_fangraphs(2005,df,dfpitchers)
+result = calc_diff_Lahman_fangraphs(1999,df,dfpitchers)
+result = calc_diff_Lahman_fangraphs(1982,df,dfpitchers)
+result = calc_diff_Lahman_fangraphs(1976,df,dfpitchers)
 
 

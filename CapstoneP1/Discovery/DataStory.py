@@ -333,7 +333,7 @@ for tick in ax.get_yticklabels():
 plt.show()
 
 # Scatter plot for players playing for 12 or more years with at least 300 avg atbats by OPS vs Age
-dfplot = df[ (df['OPS'] > .0) & (df['OPS'] <= 1.5)][['OPS','age','years_played']]
+dfplot = df[ (df['OPS'] > .0) & (df['OPS'] <= 1.5) & (df['age'] >= 18)][['OPS','age','years_played']]
 ax = dfplot.plot(kind='scatter', x='age',y='OPS',figsize=(FSHZ,8),color='#86bf91')
 ax.set_title('OPS vs. Age \nAll Position Players\n', weight='bold', size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
@@ -348,13 +348,13 @@ ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
 
 # Color bands for scatter plot 12 year players or longer
-dfplot = df[ (df['OPS_AVG'] >= .6501) & (df['OPS'] > 0) & (df['OPS'] < 1.5)][['OPS','age']]
+dfplot = df[ (df['OPS_AVG'] >= .6501) & (df['OPS'] > 0) & (df['OPS'] < 1.5) & (df['age'] >= 18)][['OPS','age']]
 dfplot.age = dfplot.age.round()
-dfplot2 = df[ (df['OPS_AVG'] <= .6500) & (df['OPS_AVG'] >= .4501) &  (df['OPS'] < 1.5) & (df['OPS'] > 0)][['OPS','age']]
+dfplot2 = df[ (df['OPS_AVG'] <= .6500) & (df['OPS_AVG'] >= .4501) &  (df['OPS'] < 1.5) & (df['OPS'] > 0) & (df['age'] >= 18)][['OPS','age']]
 dfplot2.age = dfplot2.age.round()
-dfplot3 = df[ (df['OPS_AVG'] <= .4500) & (df['OPS_AVG'] >= .3001) & (df['OPS'] < 1.5) & (df['OPS'] > 0)][['OPS','age']]
+dfplot3 = df[ (df['OPS_AVG'] <= .4500) & (df['OPS_AVG'] >= .3001) & (df['OPS'] < 1.5) & (df['OPS'] > 0) & (df['age'] >= 18)][['OPS','age']]
 dfplot3.age = dfplot3.age.round()
-dfplot4 = df[ (df['OPS_AVG'] <= .3000) & (df['OPS'] < 1.5) & (df['OPS'] > 0)][['OPS','age']]
+dfplot4 = df[ (df['OPS_AVG'] <= .3000) & (df['OPS'] < 1.5) & (df['OPS'] > 0) & (df['age'] >= 18)][['OPS','age']]
 dfplot4.age = dfplot4.age.round()
 ax = plt.gca()
 dfplot.plot(kind='scatter',x='age',y='OPS',color='#ff9999',alpha=1, figsize=(FSHZ,8), ax=ax, label = 'High Performers')
@@ -362,7 +362,35 @@ dfplot2.plot(kind='scatter',x='age',y='OPS',color='#66b3ff',alpha=0.5, ax=ax, la
 dfplot3.plot(kind='scatter',x='age',y='OPS',color='#99ff99',alpha=0.4, ax=ax, label = 'Below Avg Performers')
 dfplot4.plot(kind='scatter',x='age',y='OPS',color='black',alpha=0.3, ax=ax, label = 'Poor Performers')
 # Scatter plot for players playing for 12 or more years by OPS vs Age '#ff9999','#66b3ff','#99ff99','#ffcc99'
-ax.set_title('OPS vs. Age\nHigh Performance Players - Years Played 12 or more Years\n', weight='bold', size=14)
+ax.set_title('OPS vs. Age\nAll Position Players - Years Played 12 or more Years\n', weight='bold', size=14)
+ax.set_xlabel("Age of Player", labelpad=10, size=14)
+ax.set_ylabel("OPS", labelpad=10, size=14)
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
+plt.yticks(np.arange(0,1.6,.1))
+plt.xticks(np.arange(18,52,1))
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+leg = plt.legend()
+plt.show()
+
+# Color bands for scatter plot 12 year players or longer for catchers only
+dfplot = df[ (df['POS'] == 'C') & (df['OPS_AVG'] >= .6501) & (df['OPS'] > 0) & (df['OPS'] < 1.5) & (df['age'] >= 18) ][['OPS','age']]
+dfplot.age = dfplot.age.round()
+dfplot2 = df[ (df['POS'] == 'C') & (df['OPS_AVG'] <= .6500) & (df['OPS_AVG'] >= .4501) &  (df['OPS'] < 1.5) & (df['OPS'] > 0) & (df['age'] >= 18)][['OPS','age']]
+dfplot2.age = dfplot2.age.round()
+dfplot3 = df[ (df['POS'] == 'C') & (df['OPS_AVG'] <= .4500) & (df['OPS_AVG'] >= .3001) & (df['OPS'] < 1.5) & (df['OPS'] > 0) & (df['age'] >= 18)][['OPS','age']]
+dfplot3.age = dfplot3.age.round()
+dfplot4 = df[ (df['POS'] == 'C') & (df['OPS_AVG'] <= .3000) & (df['OPS'] < 1.5) & (df['OPS'] > 0) & (df['age'] >= 18)][['OPS','age']]
+dfplot4.age = dfplot4.age.round()
+ax = plt.gca()
+dfplot.plot(kind='scatter',x='age',y='OPS',color='#ff9999',alpha=1, figsize=(FSHZ,8), ax=ax, label = 'High Performers')
+dfplot2.plot(kind='scatter',x='age',y='OPS',color='#66b3ff',alpha=0.5, ax=ax, label = 'Average Performers')
+dfplot3.plot(kind='scatter',x='age',y='OPS',color='#99ff99',alpha=0.4, ax=ax, label = 'Below Avg Performers')
+dfplot4.plot(kind='scatter',x='age',y='OPS',color='black',alpha=0.3, ax=ax, label = 'Poor Performers')
+# Scatter plot for players playing for 12 or more years by OPS vs Age '#ff9999','#66b3ff','#99ff99','#ffcc99'
+ax.set_title('OPS vs. Age\nCathers Only - Years Played 12 or more Years\n', weight='bold', size=14)
 ax.set_xlabel("Age of Player", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
 for tick in ax.get_xticklabels():
@@ -388,21 +416,7 @@ for tick in ax.get_yticklabels():
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
 print('\n\n')
-
-# Scatter plot for only catchers OPS vs Years Played
-dfplot = df[(df['POS'] == 'C') & (df['OPS'] < 1.5) & (df['OPS'] > 0)][['OPS','years_played']]
-ax = dfplot.plot(kind='scatter', x='OPS',y='years_played',figsize=(FSHZ,7),color='#86bf91')
-ax.set_title('Years in League vs. OPS \nAll Players\n', weight='bold', size=14)
-ax.set_xlabel("OPS", labelpad=10, size=14)
-ax.set_ylabel("Years in League", labelpad=10, size=14)
-for tick in ax.get_xticklabels():
-    tick.set_fontsize(11)
-for tick in ax.get_yticklabels():
-    tick.set_fontsize(11)
-ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-plt.show()
-print('\n\n')
-
+stop
 
 #
 ####################################################################################################################

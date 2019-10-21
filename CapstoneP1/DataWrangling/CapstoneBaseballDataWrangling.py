@@ -9,7 +9,7 @@ Created on Tue Aug 20 11:24:24 2019
 This program is the first stage for the Capstone Project : Baseball Analysis of OPS and
 aging players.
 
-The following sources data from batting, people (players) and positions from the Layman baseball
+The following sources data from batting, people (players) and positions from the Lahman baseball
 csv files.  Team data was loaded but it was not used in calculations.  It can always be used later.
 The data is analyzed for missing data, data types are dealt with and then additional
 columns are added if necessary.  # of base hits, SLG OBP and OPS needs to be calculated as well
@@ -435,7 +435,7 @@ print('\n')
 #
 ######################################################################################
 
-# there will be NaN values due to missing data in fielding layman file
+# there will be NaN values due to missing data in fielding Lahman file
 # and due to zero divide for OPS calulation.  there are 226 total records and data
 # shows these player have a total of 256 at bats.  Not relevent enough to try to fix
 df_nan = nans_df(dfbatting_player_stats)
