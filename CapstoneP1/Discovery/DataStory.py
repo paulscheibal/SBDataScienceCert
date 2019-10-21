@@ -416,7 +416,6 @@ for tick in ax.get_yticklabels():
 ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 plt.show()
 print('\n\n')
-stop
 
 #
 ####################################################################################################################
