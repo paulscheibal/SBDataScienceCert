@@ -282,7 +282,7 @@ data = np.array(data.OPS)
 seed(61)
 n=len(data)
 
-m=20
+m=2000
 
 sqrtn = np.sqrt(n)
 meanarr = np.array([np.mean(OPS_samples(data)) for i in range(m)])
