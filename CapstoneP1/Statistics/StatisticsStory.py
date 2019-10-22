@@ -154,7 +154,19 @@ def calc_poly(x_data,y_data,type):
     polynomial = np.poly1d(coef)
     x = np.arange(min(x_data),max(x_data) + 1,1)
     y = polynomial(x)
-    return coef,x,y
+    return polynomial,coef,x,y
+
+def poly_fit(f,x,y):
+    return np.sum((f(x) - y) ** 2)
+
+def plot_poly(xarr,yarr,d,c,w):
+    fcnarr = []
+    for i in range(0,len(d)):
+        type = d[i]
+        poly, coef, x, y = calc_poly(xarr, yarr, type)
+        fcnarr.append(poly)
+        plt.plot(x,y,label= 'Polynomial Fit Degree %1.f' % type, linewidth=w,color=c[i])
+    return fcnarr
 
 def ecdf_plot_replicates(df,m,clr):
     data = np.array([bootstrap_replicate_wr(df,OPS_val) for i in range(m)])
@@ -510,10 +522,9 @@ sops = np.array(dfplot.OPS)
 plt.yticks(np.arange(.0,1.6,.1))
 plt.xticks(np.arange(min(sage),max(sage),1))
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-type = 3
-coef,x,y = calc_poly(sage,sops,type)
-#dfxy = pd.DataFrame(xs,ys)
-plt.plot(x,y,label= 'Polynomial Fit Type %1.f' % type, linewidth=7)
+degreearr = [3]
+colorarr = ['blue']
+farr = plot_poly(sage,sops,degreearr, colorarr, 7)
 plt.plot(xps,yps,label='Paul Goldschmidt OPS Trend', marker='.', linestyle='none',markersize=12,color='red')
 plb.axhline(.9000,c='C1',label='Excellent - .9000', color='#ff9999')
 plb.axhline(.8334,c='C2',label='Very Good - .8334', color='#66b3ff')
@@ -529,7 +540,6 @@ print('Pearson Correlation %.3f' % pcorr)
 
 # Scatter plot for players playing for 12 or more years by OPS vs Age 
 dfym = df[df['playerID'] == 'molinya01']
-print(pd.DatetimeIndex(dfym['birthdate']).year)
 
 xym = dfym.age
 yym = dfym.OPS
@@ -549,10 +559,9 @@ sops = np.array(dfplot.OPS)
 plt.yticks(np.arange(0,1.6,.1))
 plt.xticks(np.arange(min(sage),max(sage),1))
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-type = 3
-coef,x,y = calc_poly(sage,sops,type)
-#dfxy = pd.DataFrame(xs,ys)
-plt.plot(x,y,label= 'Polynomial Fit Type %1.f' % type, linewidth=7)
+degreearr = [3]
+colorarr = ['blue']
+farr = plot_poly(sage,sops,degreearr, colorarr, 7)
 plt.plot(xym,yym,label='Yadier Molina OPS Trend', marker='.', linestyle='none',markersize=12,color='red')
 #plb.axhline(.9000,c='C1',label='Excellent - .9000', color='#ff9999')
 plb.axhline(.8334,c='C2',label='Very Good - .8334', color='#66b3ff')
@@ -585,9 +594,9 @@ syp = np.array(dfplot.years_played)
 sops = np.array(dfplot.OPS)
 plt.yticks(np.arange(.200,1.500,.050))
 plt.xticks(np.arange(min(syp), max(syp) + 1,1))
-type = 1
-coef,x,y = calc_poly(syp,sops,type)
-plt.plot(x,y,label= 'Polynomial Fit Type %1.f' % type, linewidth=7)
+degreearr = [1]
+colorarr = ['blue']
+farr = plot_poly(syp,sops,degreearr, colorarr, 7)
 ax.tick_params(axis='both', which='major', labelsize=12)
 leg = plt.legend()
 plt.show()
@@ -844,9 +853,9 @@ else:
 
 
 #
-# plot players by year against OPS for all players
-# fitting polynomial curve
+# plot time series with set of curves to choose best fit curve
 #
+figsize(FSHZ,7)
 dfplot = df[['yearID','H','BB','HBP','AB','SF','1B','2B','3B','HR']]
 dfplot = dfplot.groupby(['yearID']).sum()
 dfplot = calc_ops(dfplot)
@@ -855,23 +864,50 @@ dfplot = dfplot.reset_index()
 syr = np.array(dfplot.yearID)
 sops = np.array(dfplot.OPS)
 fig, ax = plt.subplots()
-ax.set_title('Yearly OPS Time Series\nAll Players\n',weight='bold', size=14)
+ax.set_title('Yearly OPS Time Series (Multiple Fit Curves)\nAll Players\n',weight='bold', size=14)
 ax.set_xlabel("Year", labelpad=10, size=14)
 ax.set_ylabel("OPS", labelpad=10, size=14)
 ax.plot(dfplot.yearID, dfplot['OPS'], marker='.', linestyle='none',markersize=14,color='#86bf91')
 plt.yticks(np.arange(.400,.900,.020))
 plt.xticks(np.arange(min(syr),max(syr)+5,5))
-#ax = dfplot.plot(kind='line',x='yearID',figsize=(FSHZ,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
-type = 20
-coef,x,y = calc_poly(syr,sops,type)
-plt.plot(x,y,label= 'Polynomial Fit Type %1.f' % type, linewidth=5)
+degreearr = [5,10,20,40]
+colorarr = ['#ff9999','#66b3ff','#99ff99','#557799']
+farr = plot_poly(syr,sops,degreearr, colorarr,3)
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 ax.tick_params(axis='both', which='major', labelsize=12)
 plt.xticks(rotation=45)
 leg = plt.legend()
 plt.show()
 
+result = [poly_fit(f,syr,sops) for f in farr]
+print('Squared differencs between predicted and actual values')
+for i in range(0,len(result)):
+    print('Degree ' + str(degreearr[i])  + ', Sum of Squared Diff %1.4f' % result[i] )
+bestfit_index = result.index(min(result))
+print('Best Fit is Degree ' + str(degreearr[bestfit_index]))
+print('\n')
+
 #
+# plot time series with best fit curve
+#
+figsize(FSHZ,7)
+fig, ax = plt.subplots()
+ax.set_title('Yearly OPS Time Series (Best Fit Curve)\nAll Players\n',weight='bold', size=14)
+ax.set_xlabel("Year", labelpad=10, size=14)
+ax.set_ylabel("OPS", labelpad=10, size=14)
+ax.plot(dfplot.yearID, dfplot['OPS'], marker='.', linestyle='none',markersize=14,color='#86bf91')
+plt.yticks(np.arange(.400,.900,.020))
+plt.xticks(np.arange(min(syr),max(syr)+5,5))
+degreearr = [degreearr[bestfit_index]]
+colorarr = [colorarr[bestfit_index]]
+farr = plot_poly(syr,sops,degreearr, colorarr,3)
+ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+ax.tick_params(axis='both', which='major', labelsize=12)
+plt.xticks(rotation=45)
+leg = plt.legend()
+plt.show()
+
+
 # plot difference in one lag OPS data to make it stationary.
 #
 ax = diffops.plot(kind='line',x='yearID',figsize=(FSHZ,8),linewidth=4,color=['#ff9999','#66b3ff','#99ff99'])
