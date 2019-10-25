@@ -528,7 +528,7 @@ for tick in ax.get_yticklabels():
 sage = np.array(dfplot.age)
 sops = np.array(dfplot.OPS)
 plt.yticks(np.arange(.0,1.6,.1))
-plt.xticks(np.arange(min(sage),max(sage),1))
+plt.xticks(np.arange(min(sage),max(sage)+1,1))
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 degreearr = [3]
 colorarr = ['blue']
@@ -565,7 +565,7 @@ for tick in ax.get_yticklabels():
 sage = np.array(dfplot.age)
 sops = np.array(dfplot.OPS)
 plt.yticks(np.arange(0,1.6,.1))
-plt.xticks(np.arange(min(sage),max(sage),1))
+plt.xticks(np.arange(min(sage),max(sage)+1,1))
 ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
 degreearr = [3]
 colorarr = ['blue']
