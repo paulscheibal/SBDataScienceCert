@@ -29,6 +29,7 @@ import math
 from numpy.random import seed
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.graphics.tsaplots import plot_acf
+import statsmodels.api as sm
 from IPython.core.pylabtools import figsize
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import IsolationForest
@@ -148,6 +149,13 @@ def OPS_val(df):
     df = df.reset_index()
     data = df['OPS']
     return data[0]
+
+def calc_r_fit(x,y,coef):
+    coeflist =  coef.tolist()
+    correlation = np.corrcoef(x, y)[0,1]
+    # r-squared
+    rsquared = correlation ** 2
+    return correlation, rsquared
 
 def calc_poly(x_data,y_data,type):
     coef= np.polyfit(x_data, y_data, type)
@@ -507,7 +515,7 @@ dfps = df[df['playerID'] == 'goldspa01']
 xps = dfps.age
 yps = dfps.OPS
 
-dfplot = df[ (df['OPS_AVG'] >= .8334) & (df['years_played'] >= 12) & (df['OPS'] <= 1.5) &  (df['age'] >= 20)][['OPS','age']]
+dfplot = df[ (df['OPS_AVG'] >= .8334) & (df['years_played'] >= 12) & (df['OPS'] <= 1.5) &  (df['age'] >= 20) & (df['age'] <= 40)][['OPS','age']]
 dfplot.age = dfplot.age.round()
 ax = dfplot.plot(kind='scatter',x='age',y='OPS',color='#86bf91', figsize=(FSHZ,8),label='Players with Avg OPS of .8334 or Greater')
 ax.set_title('OPS vs. Age \nHigh Performance Players - Years Played 12 or more Years\n', weight='bold', size=14)
@@ -544,7 +552,7 @@ dfym = df[df['playerID'] == 'molinya01']
 xym = dfym.age
 yym = dfym.OPS
 
-dfplot = df[ (df['OPS_AVG'] >= .7000) & (df['OPS_AVG'] <= .7666) & (df['years_played'] >= 12) & (df['OPS'] <= 1.5) & (df['age'] >= 20)][['OPS','age']]
+dfplot = df[ (df['OPS_AVG'] >= .7000) & (df['OPS_AVG'] <= .7666) & (df['years_played'] >= 12) & (df['OPS'] <= 1.5) & (df['age'] >= 20) & (df['age'] <= 40)][['OPS','age']]
 dfplot.age = dfplot.age.round()
 ax = dfplot.plot(kind='scatter',x='age',y='OPS',color='#86bf91', figsize=(FSHZ,8), label='Players with Avg OPS of .7000 to .7666')
 ax.set_title('OPS vs. Age\nAverage Players - Years Played 12 or more Years\n', weight='bold', size=14)
@@ -879,7 +887,9 @@ plt.xticks(rotation=45)
 leg = plt.legend()
 plt.show()
 
+# calulate the fits for all the curves
 result = [poly_fit(f,syr,sops) for f in farr]
+# get the best one
 print('Squared differencs between predicted and actual values')
 for i in range(0,len(result)):
     print('Degree ' + str(degreearr[i])  + ', Sum of Squared Diff %1.4f' % result[i] )
