@@ -37,7 +37,7 @@ import math
 from numpy.random import seed
 from sklearn.linear_model import ElasticNet
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
@@ -45,8 +45,15 @@ from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
 from sklearn.metrics import classification_report
+from sklearn.model_selection import StratifiedKFold
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVR
+import xgboost as xgb
+from xgboost import XGBRegressor
 import seaborn as sns; sns.set(color_codes=True)
 from IPython.core.pylabtools import figsize
+import warnings
+warnings.filterwarnings("ignore")
 
 figsize(12,8)
 
@@ -137,36 +144,50 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     df_results['predOPS'] = round(df_results['predOPS'],3)
     df_results['AVG'] = round(df_results['AVG'],3)
     df_results['error'] = round(df_results['error'],1)
-    
     df_out = df_results[stats_list]
     save_stats_file(path,fn, df_out)
-
+    #
     print('MSE: {}'.format(mean_squared_error(y_test,y_pred)))
+    print('RMSE: {}'.format(np.sqrt(mean_squared_error(y_test,y_pred))))
     print('Test Len',format(len(df_out.error)))
     print('Sum of Abs Error',format(sum(abs(df_out.error))))
     print('Mean Error',format(np.mean(df_out.error)))
     print('Std Dev Error',format(np.std(df_out.error)))
     print("R^2: {}".format(mdlinst.score(X_test, y_test)))    
     acc = df_results['error']
-    plt.plot(df_out['OPS'], df_out['predOPS'], marker='.',linestyle='none')
-    plt.title('actual OPS vs. Prdicted OPS')
+    ptile = np.percentile(acc,[2.5,97.5])
+    print('Error Confidence Interval: ',ptile)
+#    plt.plot(df_out['OPS'], df_out['predOPS'], marker='.',linestyle='none')
+#    plt.title('Actual OPS vs. Predicted OPS')
+#    plt.xlabel('Actual OPS')
+#    plt.ylabel('Predicted OPS')
+#    plt.show()
+    # use the function regplot to make a scatterplot
+    sns.regplot(x=df_out['OPS'], y=df_out['predOPS'],
+                line_kws={"color":"r","alpha":0.7,"lw":5},
+                scatter_kws={"color":"b","s":8}
+               )
+    plt.title('Actual OPS vs. Predicted OPS')
     plt.xlabel('Actual OPS')
     plt.ylabel('Predicted OPS')
     plt.show()
-    ptile = np.percentile(acc,[2.5,97.5])
     plt.hist(acc,bins=25)
-    plt.title('Error - Actual OPS - Predicted OPS')
+    plt.title('Error : Actual OPS - Predicted OPS')
     plt.xlabel('Error')
     plt.ylabel('Frequency')
+    lab = 'Sampling Mean: %1.2f' % round(np.mean(df_out.error),2)
+    lab1 = 'Conf Interval 2.5 ( %1.3f' % ptile[0] + ' )'
+    lab2 = 'Conf Interval 97.5 ( %1.3f' % ptile[1] + ' )'
+    plb.axvline(round(np.mean(df_out.error),2),label=lab, color='brown')
+    plb.axvline(round(ptile[0],3), label=lab1, color='red')
+    plb.axvline(round(ptile[1],3), label=lab2, color='red')
+    leg=plt.legend()
     plt.show()
-    plt.scatter(y_pred,(y_pred-y_test))
-    plt.title('actual OPS vs. Residuals')
+    plt.plot(y_pred, (y_pred-y_test), marker='.',linestyle='none',color='b')
+    plt.title('Actual OPS vs. Residuals')
     plt.xlabel('Actual OPS')
     plt.ylabel('Residuals')
     plt.show()
-#    sns.regplot(x='OPS', y='predOPS', data=df_results, ci=[2.5,95],color='g')
-#    plt.show()
-    print(ptile)
     return True
 
 def batting_stars(df,OPSmarker,OPScnt):
@@ -247,26 +268,85 @@ X_train = df_train[feature_list]
 y_train = df_train.OPS
 X_test = df_test[feature_list]
 y_test = df_test.OPS
-print(X_train.info())
-print(X_test.info())
-
 
 stats_list = ['yearID','playername','OPS','predOPS','error','AB','H','AVG','HR','3B','2B','1B','POS','SLG','OBP','age','height']
 
-################################################### Random Forests #########################################################
+#################################################### XGBoost ###############################################################
+##   learning_rate: step size shrinkage used to prevent overfitting. Range is [0,1]
+##   max_depth: determines how deeply each tree is allowed to grow during any boosting round.
+##   subsample: percentage of samples used per tree. Low value can lead to underfitting.
+##   colsample_bytree: percentage of features used per tree. High value can lead to overfitting.
+##   n_estimators: number of trees you want to build.
+##   objective: determines the loss function to be used like reg:linear for regression problems, 
+##              reg:logistic for classification problems with only decision, binary:logistic for 
+##              classification problems with probability.
 #
+##   XGBoost also supports regularization parameters to penalize models as they become more complex and reduce them to simple (
+##   parsimonious) models.
+##
+##   gamma: controls whether a given node will split based on the expected reduction in loss after the split. 
+##          A higher value leads to fewer splits. Supported only for tree-based learners.
+##   alpha: L1 regularization on leaf weights. A large value leads to more regularization.
+##          lambda: L2 regularization on leaf weights and is smoother than L1 regularization.
+#
+#################################################### XGBoost ##############################################################
 
-print('Random Forest Regressor')
-from sklearn.ensemble import RandomForestRegressor
-rf = RandomForestRegressor(n_estimators=1000,random_state=61)
-rf.fit(X_train, y_train)
-pred = rf.predict(X_test)
+print('\n')
+print('XGBoost Regressor')
+print('\n')
+# 'Create instance of XGBoost
 
-lr_results(df,X_test,y_test,pred,path,'OPSpredictionsRF.csv',stats_list,rf)
+reg_xgb = xgb.XGBRegressor(objective ='reg:squarederror', 
+                           colsample_bytree=0.6, 
+                           learning_rate=0.2,
+                           max_depth=3, 
+                           n_estimators=50, 
+                           alpha=1
+                          )
+
+reg_xgb.fit(X_train, y_train)
+
+y_pred = reg_xgb.predict(X_test)
+
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB.csv',stats_list,reg_xgb)
+
+################################################### XGBoost GridSearchCV ##################################################
+
+print('\n')
+print('XGBoost GridSearchCV')
+print('\n')
+params = {
+        'colsample_bytree': [0.5,0.6,0.7],
+        'learning_rate':[0.1,0.2,0.3],
+        'n_estimators': [20,40,60],
+        'max_depth':[3,4,5],
+        'alpha':[1,10],
+        'gamma':[0.001,0.01,0.1],
+        'subsamples':[0.6,0.7,0.8]
+        }
+reg_xgb = XGBRegressor()
+
+gs = GridSearchCV(estimator=reg_xgb, 
+                  param_grid=params, 
+                  cv=3,
+                  n_jobs=-1, 
+                  verbose=2
+                 )
+
+gs.fit(X_train, y_train)
+
+y_pred = gs.predict(X_test)
+
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB_GS.csv',stats_list,gs)
+print(gs.best_params_)
+print(gs.best_score_)
+print(np.sqrt(np.abs(gs.best_score_)))
 
 ##################################################### LinReg ##############################################################
 
-print('Linear Regression')
+print('\n')
+print('Linear Regression - Ridge')
+print('\n')
 ridge = Ridge(alpha=.001, normalize=True)
 ridge.fit(X_train, y_train)
 y_pred = ridge.predict(X_test)
@@ -274,7 +354,9 @@ lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsC.csv',stats_list,ridge)
 
 ##################################################### Poly ###############################################################
 
+print('\n')
 print('Linear Regression - Poly')
+print('\n')
 poly = PolynomialFeatures(degree=3)
 X_poly = poly.fit_transform(X)
 X_train1, X_test1, y_train1, y_test1 = train_test_split(X_poly,y, test_size = 0.3, random_state=61)
@@ -285,7 +367,9 @@ lr_results(df,X_test1,y_test1,y_pred,path,'OPSpredictionsPoly.csv',stats_list,re
 
 ################################################ Lasso ###################################################################
 
+print('\n')
 print('Linear Regression - Lasso')
+print('\n')
 lasso = Lasso(alpha=0.0001)
 lasso_coef = lasso.fit(X_train, y_train).coef_
 y_pred = lasso.predict(X_test)
@@ -300,8 +384,67 @@ plt.xticks(range(len(cols)), cols, rotation=45)
 plt.ylabel('Coefficients')
 plt.show()
 
+################################################### Random Forests #########################################################
 
+print('\n')
+print('Random Forest Regressor')
+print('\n')
+# Create the parameter grid based on the results of random search 
+param_grid = {
+    'bootstrap': [True],
+    'max_depth': [80, 90, 100, 110],
+    'max_features': [4,5],
+    'min_samples_leaf': [3, 4, 5],
+    'min_samples_split': [8, 10, 12],
+    'n_estimators': [100, 200, 300]
+}
+# Create a based model
+rf = RandomForestRegressor()
+# Instantiate the grid search model
+gs = GridSearchCV(estimator = rf, param_grid = param_grid, 
+                          cv = 3, n_jobs = -1, verbose = 2)
 
+gs.fit(X_train, y_train)
+pred = gs.predict(X_test)
 
+lr_results(df,X_test,y_test,pred,path,'OPSpredictionsRF.csv',stats_list,gs)
 
+print(gs.best_params_)
+print(gs.best_score_)
+print(np.sqrt(np.abs(gs.best_score_)))
 
+################################################## SVM ###################################################################
+
+print('\n')
+print('SVM')
+print('\n')
+
+svm_reg = SVR(kernel='rbf')
+svm_reg.fit(X_train,y_train)
+y_pred = svm_reg.predict(X_test)
+
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM.csv',stats_list,svm_reg)
+
+################################################### SVM ###################################################################
+
+print('\n')
+print('SVM with GridSearchCV')
+print('\n')
+
+params = {
+    'C': [0.001, 0.01, 0.1, 1, 10],
+    'gamma': [0.001, 0.01, 0.1, 1]
+}
+
+svm_reg1 = SVR(kernel='rbf')
+
+gssvm = GridSearchCV(svm_reg1, param_grid=params, cv=3)
+
+gssvm.fit(X, y)
+y_pred = gssvm.predict(X_test)
+
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM_GS.csv',stats_list,gssvm)
+print(gssvm.best_params_)
+print(gssvm.best_score_)
+print(np.sqrt(np.abs(gssvm.best_score_)))
+#
