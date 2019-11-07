@@ -38,6 +38,7 @@ from numpy.random import seed
 from sklearn.linear_model import ElasticNet
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
@@ -55,7 +56,7 @@ from IPython.core.pylabtools import figsize
 import warnings
 warnings.filterwarnings("ignore")
 
-figsize(12,8)
+figsize(12,10)
 
 MIN_AT_BATS = 0
 START_YEAR = 1954
@@ -115,11 +116,11 @@ def split_players(df,pct):
     seed(61)
     players = np.array(df.playerID.drop_duplicates())
     plen = len(players)
-    indlst = np.random.randint(low=0,high=plen-1, size = round(pct*plen))
-    print('playerlen hold back ' + str(plen*pct))
-    test_players = players[indlst]
-    train_players = players[~np.isin(players,test_players)]
-    return train_players, test_players
+    indlst = random.sample(range(0,plen), round(pct*plen))
+    print('playerlen hold back ' + str(round(plen*pct)))
+    test_players = np.array(players[indlst])
+    train_players = np.setdiff1d(players,test_players)
+    return train_players, test_player
 
 def split_df(df,pct):
     train_p, test_p = split_players(df,pct)
@@ -223,16 +224,84 @@ def calc_BMI(df):
     BMI = kilograms / (meters ** 2)
     df['BMI'] = round(BMI,2)
     return df
+
+def cummulative_STATS(df):
+    df['groupby'] = 1
+    dfsum = df.groupby('groupby').sum().reset_index(drop=True)
+    cAB = dfsum.AB.values[0]
+    cHR = dfsum.HR.values[0]
+    cH = dfsum.H.values[0]
+    cAVG = round(cH/cAB,3)
+    return cAB, cHR, cH, cAVG
+    
+
+#  calculate lag1 cumulative OPS for each player.
+def calc_lag1_cumulativeSTAT(df):
+#    df = df[df['playerID'].isin(['streuwa01'])]
+    playerlist = np.array(df.playerID.drop_duplicates())
+    start_yearnum = 1
+    lag1_cumulativeSTAT_list = []
+    cnt = 0
+    for p in playerlist:
+        cnt += 1
+        yn_list = df[df['playerID'] == p]['yearnum'].sort_values().values
+        ABvalue1 = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0])]['AB'].values[0]
+        HRvalue1 = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0])]['HR'].values[0]
+        Hvalue1 = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0])]['H'].values[0]
+        AVGvalue1 = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0])]['AVG'].values[0]
+        yearid = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0] )]['yearID'].values[0]
+        lag1_cumulativeSTAT_list.append((yearid,p,ABvalue1,
+                                                  HRvalue1,
+                                                  Hvalue1,
+                                                  AVGvalue1,
+                                                  ABvalue1,
+                                                  HRvalue1,
+                                                  Hvalue1,
+                                                  AVGvalue1
+                                        ))
+        print(cnt,yearid,p)
+        for i in range(0,len(yn_list)-1,1):
+            # sum stats over lag1
+            end_yearnum = yn_list[i + 1]
+            yn = yn_list[i]
+            dfp = df[( df['playerID'] == p ) & ( df['yearnum'] < end_yearnum )]
+            lag1_ABvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == yn )]['AB'].values[0]
+            lag1_HRvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == yn )]['HR'].values[0]
+            lag1_Hvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == yn )]['H'].values[0]
+            lag1_AVGvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == yn )]['AVG'].values[0]
+            yearid = df[( df['playerID'] == p ) & ( df['yearnum'] == end_yearnum )]['yearID'].values[0]
+            lag1_cABvalue, lag1_cHRvalue, lag1_cHvalue, lag1_cAVGvalue = cummulative_STATS(dfp)
+            lag1_cumulativeSTAT_list.append((yearid,p,lag1_cABvalue ,
+                                                      lag1_cHRvalue ,
+                                                      lag1_cHvalue ,
+                                                      lag1_cAVGvalue ,
+                                                      lag1_ABvalue,
+                                                      lag1_HRvalue,
+                                                      lag1_Hvalue,
+                                                      lag1_AVGvalue
+                                           ))
+    dflag1 = pd.DataFrame(lag1_cumulativeSTAT_list,columns=['yearID','playerID','lag1_cAB',
+                                                                                'lag1_cHR' ,
+                                                                                'lag1_cH' ,
+                                                                                'lag1_cAVG' ,
+                                                                                'lag1_AB',
+                                                                                'lag1_HR',
+                                                                                'lag1_H',
+                                                                                'lag1_AVG'])
+    df = pd.merge(df,dflag1,on=['yearID','playerID'])
+    df = df.reset_index(drop=True)
+    return df
         
 # set path for reading Lahman baseball statistics
 path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
 
-battingf = path + 'dfbatting_player_stats.csv'
+battingf = path + 'dfbatting_player_stats1.csv'
 dfbatting_player_stats = pd.read_csv(battingf,parse_dates=['debut','finalGame','birthdate'])
 
 dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut'] >= START_DATE) &
                                                 (dfbatting_player_stats['finalGame'] <= END_DATE)]
 df = dfbatting_player_stats
+
 df = df[( df['years_played'] > 11 ) & ( df['AB'] > 250 ) & ( df['OPS'] < 1.2 ) & ( df['OPS'] > .4 )]
 df = df.reset_index(drop=True)
 
@@ -257,7 +326,8 @@ df.weight = df.weight.astype(int)
 df.height = df.height.astype(int)
 df = calc_BMI(df)
 
-feature_list =  ['age','teamID','yearnum','height','POSnum','BMI','lag1_OPS','lag1_cOPS']
+df['lag1_cH'] = np.log(df['lag1_cH'] )
+feature_list =  ['age','teamID','yearnum','height','POSnum','BMI','lag1_OPS','lag1_cOPS','lag1_HR','lag1_H','lag1_cHR','lag1_cH']
 #feature_list =  ['yearnum','BMI','lag1_OPS']
 X = df[feature_list]
 y = df.OPS
@@ -309,7 +379,6 @@ reg_xgb.fit(X_train, y_train)
 y_pred = reg_xgb.predict(X_test)
 
 lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB.csv',stats_list,reg_xgb)
-
 ################################################### XGBoost GridSearchCV ##################################################
 
 print('\n')
@@ -392,11 +461,11 @@ print('\n')
 # Create the parameter grid based on the results of random search 
 param_grid = {
     'bootstrap': [True],
-    'max_depth': [80, 90, 100, 110],
-    'max_features': [4,5],
-    'min_samples_leaf': [3, 4, 5],
-    'min_samples_split': [8, 10, 12],
-    'n_estimators': [100, 200, 300]
+    'max_depth': [300],
+    'max_features': [3,4],
+    'min_samples_leaf': [5],
+    'min_samples_split': [12],
+    'n_estimators': [1000]
 }
 # Create a based model
 rf = RandomForestRegressor()
@@ -432,8 +501,8 @@ print('SVM with GridSearchCV')
 print('\n')
 
 params = {
-    'C': [0.001, 0.01, 0.1, 1, 10],
-    'gamma': [0.001, 0.01, 0.1, 1]
+    'C': [0.1],
+    'gamma': [0.001]
 }
 
 svm_reg1 = SVR(kernel='rbf')
