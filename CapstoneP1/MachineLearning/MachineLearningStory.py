@@ -375,7 +375,7 @@ df.weight = df.weight.astype(int)
 df.height = df.height.astype(int)
 df = calc_BMI(df)
 
-feature_list =  ['age','teamID','nheight','nweight','POS_SS','POS_1B','POS_2B','POS_3B','POS_OF','POS_C','BMI','lag1_OPS','lag1_cOPS','lag1_nH','lag1_ncH','lag1_nHR','lag1_ncHR']
+feature_list =  ['age','nheight','nweight','POS_SS','POS_1B','POS_2B','POS_3B','POS_OF','POS_C','lag1_OPS','lag1_cOPS','lag1_nH','lag1_ncH','lag1_nHR','lag1_ncHR']
 #feature_list =  ['yearnum','BMI','lag1_OPS']
 X = df[feature_list]
 y = df.OPS

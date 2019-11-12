@@ -102,7 +102,7 @@ def classification_metrics(X_test, y_test, y_pred, classifier,clr,lbl, roctitle,
     plt.ylabel('True Positive Rate')
     plt.title(roctitle)
     if showflag == True:
-        leg = plt.legend()
+        leg = plt.legend(loc='lower right')
         plt.show()
     return True
 
