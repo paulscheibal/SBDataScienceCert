@@ -37,6 +37,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import make_classification
+from sklearn.metrics import roc_curve
 from sklearn.svm import SVR
 import xgboost as xgb
 from xgboost import XGBRegressor
@@ -86,8 +87,26 @@ def calc_ops(df):
     df['AVG'] = df['H'] / df['AB']
     return  df
 
+def classification_metrics(X_test, y_test, y_pred, classifier,clr,lbl, roctitle,showflag):
+    print('Accuracy Score: %1.4f' % accuracy_score(y_pred,y_test))
+    print('Confusion Maxtrix: ')
+    print(confusion_matrix(y_test,y_pred))
+    print('Classification Report: ')
+    print(classification_report(y_test,y_pred))
+    
+    y_pred_prob = classifier.predict_proba(X_test)[:,1]
+    fpr, tpr, thesholds = roc_curve(y_test, y_pred_prob)
+    plt.plot([0,1],[0,1], 'k--')
+    plt.plot(fpr, tpr, linewidth=5,color=clr,label=lbl)
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title(roctitle)
+    if showflag == True:
+        leg = plt.legend()
+        plt.show()
+    return True
 
-figsize(15,9)
+figsize(12,9)
 path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
 fn = '01_heights_weights_genders.csv'
 filef = path + fn
@@ -129,6 +148,14 @@ print(accuracy_score(y_pred,y_test))
 
 print(confusion_matrix(y_test,y_pred))
 print(classification_report(y_test,y_pred))
+y_pred_prob = lr_cls.predict_proba(X_test)[:,1]
+fpr, tpr, thesholds = roc_curve(y_test, y_pred_prob)
+plt.plot([0,1],[0,1], 'k--')
+plt.plot(fpr, tpr, label = 'Logistic Regression')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Logistic Regression ROC Curve')
+plt.show()
 
 ########################################## Knn Classifier ###############################################
 
@@ -188,6 +215,7 @@ print(confusion_matrix(y_test,y_pred))
 print(classification_report(y_test,y_pred))
 
 ########################################## Baseball Fun ###############################################
+
 MIN_AT_BATS = 0
 START_YEAR = 1954
 END_YEAR = 2018
@@ -197,7 +225,7 @@ END_DATE = datetime.strptime(str(END_YEAR)+'-12-31','%Y-%m-%d')
 LEGEND_PROPERTIES = {'weight':'bold'}
 
 
-battingf = path + 'dfbatting_player_stats1.csv'
+battingf = path + 'dfbatting_player_stats.csv'
 dfbatting_player_stats = pd.read_csv(battingf,parse_dates=['debut','finalGame','birthdate'])
 
 dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut'] >= START_DATE) &
@@ -208,12 +236,12 @@ print(len(df))
 print(len(df.playerID.drop_duplicates()))
 df = df[df['POS'].isin(['SS','1B'])]
 
-dfss = df[df['POS'] == '1B']
-df1b = df[df['POS'] == 'SS']
+df1b = df[df['POS'] == '1B']
+dfss = df[df['POS'] == 'SS']
 print(len(df1b))
 print(len(dfss))
-plt.scatter(df1b['height'], df1b['weight'],color='blue',alpha=0.5,label='1B')
-plt.scatter(dfss['height'], dfss['weight'],color='purple',alpha=0.5,label='SS')
+plt.scatter(df1b['height'], df1b['weight'],color='blue',alpha=0.3,label='1B')
+plt.scatter(dfss['height'], dfss['weight'],color='purple',alpha=0.3,label='SS')
 plt.title('Height vs. Weight Plot By Position')
 plt.xlabel('Height')
 plt.ylabel('Weight')
@@ -230,38 +258,42 @@ y_train = (df_train.POS == '1B').values
 X_test = df_test[feature_list]
 y_test = (df_test.POS == '1B').values
 
+########################################## XGBoost ###############################################
+
+print('\n')
+print('XGB Classifier - Baseball')
+print('\n')
 xgb_cls = XGBClassifier()
 xgb_cls.fit(X_train,y_train)
 y_pred = xgb_cls.predict(X_test)
+classification_metrics(X_test, y_test, y_pred, xgb_cls,'red','XGB', 'XGBoost ROC Curve\nBaseball Classification (1B vs SS)',False)
 
-print(accuracy_score(y_pred,y_test))
-print(confusion_matrix(y_test,y_pred))
-print(classification_report(y_test,y_pred))
+########################################## Knn 3 ##################################################
 
-lr_cls = LogisticRegression()
-
-#gs_cv =  GridSearchCV(clf, param_grid=dict(C=Cs), cv=5)
-
-lr_cls.fit(X_train,y_train)
-
-y_pred = lr_cls.predict(X_test)
-
-###print("Tuned LogisticRegression Hyperparameter: {}".format(gs_cv.best_params_))
-print(accuracy_score(y_pred,y_test))
-
-print(confusion_matrix(y_test,y_pred))
-print(classification_report(y_test,y_pred))
-
-
-knn_cls = KNeighborsClassifier(n_neighbors=5)
-
+print('\n')
+print('Knn Classifier - Baseball')
+print('\n')
+k=3
+knn_cls = KNeighborsClassifier(n_neighbors=k)
 knn_cls.fit(X_train,y_train)
 y_pred = knn_cls.predict(X_test)
+classification_metrics(X_test, y_test, y_pred, knn_cls,'green','Knn k='+str(k), 'Knn ROC Curve\nBaseball Classification (1B vs SS)',False)
 
-print(accuracy_score(y_pred,y_test))
-print(confusion_matrix(y_test,y_pred))
-print(classification_report(y_test,y_pred))
+########################################## Knn 7 ##################################################
+print('\n')
+print('Knn Classifier - Baseball')
+print('\n')
+k=7
+knn_cls = KNeighborsClassifier(n_neighbors=k)
+knn_cls.fit(X_train,y_train)
+y_pred = knn_cls.predict(X_test)
+classification_metrics(X_test, y_test, y_pred, knn_cls,'purple','Knn k='+str(k), 'Knn ROC Curve\nBaseball Classification (1B vs SS)',False)
 
+########################################## Random Forest ##################################################
+
+print('\n')
+print('RF Classifier - Baseball')
+print('\n')
 rf_cls = RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
             max_depth=7, max_features='auto', max_leaf_nodes=None,
             min_impurity_decrease=0.0, min_impurity_split=None,
@@ -271,7 +303,14 @@ rf_cls = RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gi
 
 rf_cls.fit(X_train,y_train)
 y_pred = rf_cls.predict(X_test)
+classification_metrics(X_test, y_test, y_pred, rf_cls,'blue','RF','Random Forests ROC Curve\nBaseball Classification (1B vs SS)',False)
 
-print(accuracy_score(y_pred,y_test))
-print(confusion_matrix(y_test,y_pred))
-print(classification_report(y_test,y_pred))
+########################################## LR Classifier ################################################
+
+print('\n')
+print('LR Classifier - Baseball')
+print('\n')
+lr_cls = LogisticRegression()
+lr_cls.fit(X_train,y_train)
+y_pred = lr_cls.predict(X_test)
+classification_metrics(X_test, y_test, y_pred, lr_cls,'orange','LogReg', 'ROC Diagram\nBaseball Classification (1B vs SS)',True)
