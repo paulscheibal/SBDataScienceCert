@@ -136,37 +136,16 @@ X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.4, random
 ########################################## LR Classifier ################################################
 
 lr_cls = LogisticRegression()
-
-#gs_cv =  GridSearchCV(clf, param_grid=dict(C=Cs), cv=5)
-
 lr_cls.fit(X_train,y_train)
-
 y_pred = lr_cls.predict(X_test)
-
-###print("Tuned LogisticRegression Hyperparameter: {}".format(gs_cv.best_params_))
-print(accuracy_score(y_pred,y_test))
-
-print(confusion_matrix(y_test,y_pred))
-print(classification_report(y_test,y_pred))
-y_pred_prob = lr_cls.predict_proba(X_test)[:,1]
-fpr, tpr, thesholds = roc_curve(y_test, y_pred_prob)
-plt.plot([0,1],[0,1], 'k--')
-plt.plot(fpr, tpr, label = 'Logistic Regression')
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('Logistic Regression ROC Curve')
-plt.show()
+classification_metrics(X_test, y_test, y_pred, lr_cls,'orange','LinReg', 'Male/Female Classification',False)
 
 ########################################## Knn Classifier ###############################################
 
 knn_cls = KNeighborsClassifier(n_neighbors=5)
-
 knn_cls.fit(X_train,y_train)
 y_pred = knn_cls.predict(X_test)
-
-print(accuracy_score(y_pred,y_test))
-print(confusion_matrix(y_test,y_pred))
-print(classification_report(y_test,y_pred))
+classification_metrics(X_test, y_test, y_pred, knn_cls,'green','Knn k=5', 'Male/Female Classification',False)
 
 ########################################## RF Classifier ###############################################
 
@@ -176,13 +155,9 @@ rf_cls = RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gi
             min_samples_leaf=1, min_samples_split=2,
             min_weight_fraction_leaf=0.0, n_estimators=1000, n_jobs=None,
             oob_score=False, random_state=0, verbose=0, warm_start=False)
-
 rf_cls.fit(X_train,y_train)
 y_pred = rf_cls.predict(X_test)
-
-print(accuracy_score(y_pred,y_test))
-print(confusion_matrix(y_test,y_pred))
-print(classification_report(y_test,y_pred))
+classification_metrics(X_test, y_test, y_pred, rf_cls,'blue','RF', 'Male/Female Classification',False)
 
 ########################################## XGB Classifier ###############################################
 
@@ -195,24 +170,19 @@ params = {
         'subsamples':[0.6],
         'n_estimators':[100]
         }
-
 xgb_cls = XGBClassifier()
-
 gs = GridSearchCV(estimator=xgb_cls, 
                   param_grid=params, 
                   cv=3,
                   n_jobs=-1, 
                   verbose=2
                  )
-
-
 gs.fit(X_train,y_train)
 y_pred = gs.predict(X_test)
 print(gs.best_params_)
 print(gs.best_score_)
-print(accuracy_score(y_pred,y_test))
-print(confusion_matrix(y_test,y_pred))
-print(classification_report(y_test,y_pred))
+classification_metrics(X_test, y_test, y_pred, gs,'red','XGB', 'Male/Female Classification',True)
+
 
 ########################################## Baseball Fun ###############################################
 
@@ -232,14 +202,10 @@ dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut']
                                                 (dfbatting_player_stats['finalGame'] <= END_DATE)]
 df = dfbatting_player_stats
 df = df[ ( df['OPS'] > 0 ) ]
-print(len(df))
-print(len(df.playerID.drop_duplicates()))
 df = df[df['POS'].isin(['SS','1B'])]
 
 df1b = df[df['POS'] == '1B']
 dfss = df[df['POS'] == 'SS']
-print(len(df1b))
-print(len(dfss))
 plt.scatter(df1b['height'], df1b['weight'],color='blue',alpha=0.3,label='1B')
 plt.scatter(dfss['height'], dfss['weight'],color='purple',alpha=0.3,label='SS')
 plt.title('Height vs. Weight Plot By Position')
