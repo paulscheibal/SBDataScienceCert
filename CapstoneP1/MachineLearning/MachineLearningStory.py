@@ -53,6 +53,7 @@ import xgboost as xgb
 from xgboost import XGBRegressor
 import seaborn as sns; sns.set(color_codes=True)
 from IPython.core.pylabtools import figsize
+import random
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -65,6 +66,12 @@ FSHZ = 17
 START_DATE = datetime.strptime(str(START_YEAR)+'-01-01','%Y-%m-%d')
 END_DATE = datetime.strptime(str(END_YEAR)+'-12-31','%Y-%m-%d')
 LEGEND_PROPERTIES = {'weight':'bold'}
+
+zero_df = lambda df: df.loc[(df == 0).any(axis=1)]
+
+inf_df = lambda df: df.loc[ ( (df == np.inf) | (df == -np.inf) ).any(axis=0)]
+
+nans_df = lambda df: df.loc[df.isnull().any(axis=1)]
 
 def calc_r_fit(x,y,coef):
     coeflist =  coef.tolist()
@@ -120,7 +127,7 @@ def split_players(df,pct):
     print('playerlen hold back ' + str(round(plen*pct)))
     test_players = np.array(players[indlst])
     train_players = np.setdiff1d(players,test_players)
-    return train_players, test_player
+    return train_players, test_players
 
 def split_df(df,pct):
     train_p, test_p = split_players(df,pct)
@@ -136,25 +143,62 @@ def perf_classes(df,pc):
                break
     return df
 
+def normalize_values(X,cols,cn,type):
+    if type == 'zeromean' :
+        X[cn] = (X.loc[:,cols] - np.mean(X.loc[:,cols]))/ np.std(X.loc[:,cols])  
+    else :
+        X[cn] = (X.loc[:,cols] - np.min(X.loc[:,cols])) / ((np.max(X.loc[:,cols]))- np.min(X.loc[:,cols]))
+    return X
+
+def normalize_categories(X,cols,prefx):
+    X_temp = X[cols]
+    X = pd.get_dummies(X,columns=cols,prefix=prefx)
+    X[cols] = X_temp
+    return X
+
+def calc_regression_stats(X,y,yp):
+    y = np.array(y)
+    yp = np.array(yp)
+    n = len(y)
+    k = len(X.columns)
+    yavg = sum(y)/n
+    TSS = sum((y - yavg) ** 2)
+    RSS = sum((y - yp) ** 2)
+    Rsquared = 1 - (RSS/TSS)
+    AdjRsquared = Rsquared - ((1-Rsquared) * ( k / ( n - k - 1 ) ) )
+    MSE = RSS / n
+    RMSE = np.sqrt(MSE)
+    Fstatistic = ( Rsquared / (1 - Rsquared) ) * ( (n - k - 1 ) / k ) 
+    error = ( (y - yp) / y ) * 100
+    AbsErrorSum = sum(abs(error))
+    MeanOfError = np.mean(error)
+    StdOfError = np.std(error)
+    return Rsquared, AdjRsquared, MSE, RMSE, Fstatistic, MeanOfError, StdOfError, AbsErrorSum
+
 def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     df_results = df.loc[y_test.index, :]
     df_results['predOPS'] = y_pred
     df_results['error'] = 100 * ( ( df_results['OPS'] - df_results['predOPS'] ) / df_results['OPS'])
     df_results['abserror'] = np.abs(100 * ( ( df_results['OPS'] - df_results['predOPS'] ) / df_results['OPS']))
     #
-    df_results['predOPS'] = round(df_results['predOPS'],3)
-    df_results['AVG'] = round(df_results['AVG'],3)
-    df_results['error'] = round(df_results['error'],1)
+    df_results['predOPS'] = df_results['predOPS']
+    df_results['AVG'] = df_results['AVG']
+    df_results['error'] = df_results['error']
     df_out = df_results[stats_list]
     save_stats_file(path,fn, df_out)
+    #  calculate Rsquared, Adj Rsquared, MSE, RMSE and Fstatistic using my routine
+    Rsquared, AdjRsquared, MSE, RMSE, Fstatistic, MeanOfError, StdOfError, AbsErrorSum = calc_regression_stats(X_test,y_test,y_pred)
     #
-    print('MSE: {}'.format(mean_squared_error(y_test,y_pred)))
-    print('RMSE: {}'.format(np.sqrt(mean_squared_error(y_test,y_pred))))
-    print('Test Len',format(len(df_out.error)))
-    print('Sum of Abs Error',format(sum(abs(df_out.error))))
-    print('Mean Error',format(np.mean(df_out.error)))
-    print('Std Dev Error',format(np.std(df_out.error)))
-    print("R^2: {}".format(mdlinst.score(X_test, y_test)))    
+    print('R Squared: %1.4f' % Rsquared)
+    print('Adjusted R Squared: %1.4f' % AdjRsquared)
+    print('F Statistic: %1.4f' % Fstatistic)
+    print('MSE: %1.4f' % MSE)
+    print('RMSE: %1.4f' % RMSE)
+    print('Test Observations:',format(len(y_test)))
+    print('Sum of Abs Pct Error: %5.1f' % AbsErrorSum)
+    print('Pct Mean Error: %1.4f' % MeanOfError)
+    print('Pct Std Dev Error: %1.4f' % StdOfError)
+    
     acc = df_results['error']
     ptile = np.percentile(acc,[2.5,97.5])
     print('Error Confidence Interval: ',ptile)
@@ -295,7 +339,7 @@ def calc_lag1_cumulativeSTAT(df):
 # set path for reading Lahman baseball statistics
 path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
 
-battingf = path + 'dfbatting_player_stats1.csv'
+battingf = path + 'dfbatting_player_stats.csv'
 dfbatting_player_stats = pd.read_csv(battingf,parse_dates=['debut','finalGame','birthdate'])
 
 dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut'] >= START_DATE) &
@@ -305,9 +349,14 @@ df = dfbatting_player_stats
 df = df[( df['years_played'] > 11 ) & ( df['AB'] > 250 ) & ( df['OPS'] < 1.2 ) & ( df['OPS'] > .4 )]
 df = df.reset_index(drop=True)
 
-## position mapping from POS string to integer
-POS_map = {'P':.10, 'C':.11, '1B':.12, '2B':.13, '3B':.14, 'SS':.15, 'OF':.16}
-df['POSnum'] = df.POS.map(POS_map)
+### position mapping from POS string to integer
+#POS_map = {'P':.10, 'C':.11, '1B':.12, '2B':.13, '3B':.14, 'SS':.15, 'OF':.16}
+#df['POSnum'] = df.POS.map(POS_map)
+
+df = normalize_categories(df,['POS'],['POS'])
+df = normalize_values(df,['height','weight','lag1_H','lag1_cH','lag1_HR','lag1_cHR'],['nheight','nweight','lag1_nH','lag1_ncH','lag1_nHR','lag1_ncHR'],'minmax')
+
+
 
 # read team mapping and create a mapping function from string to integer
 teamsf = path + 'teams_list.csv'
@@ -326,8 +375,7 @@ df.weight = df.weight.astype(int)
 df.height = df.height.astype(int)
 df = calc_BMI(df)
 
-df['lag1_cH'] = np.log(df['lag1_cH'] )
-feature_list =  ['age','teamID','yearnum','height','POSnum','BMI','lag1_OPS','lag1_cOPS','lag1_HR','lag1_H','lag1_cHR','lag1_cH']
+feature_list =  ['age','teamID','nheight','nweight','POS_SS','POS_1B','POS_2B','POS_3B','POS_OF','POS_C','BMI','lag1_OPS','lag1_cOPS','lag1_nH','lag1_ncH','lag1_nHR','lag1_ncHR']
 #feature_list =  ['yearnum','BMI','lag1_OPS']
 X = df[feature_list]
 y = df.OPS
@@ -370,8 +418,10 @@ reg_xgb = xgb.XGBRegressor(objective ='reg:squarederror',
                            colsample_bytree=0.6, 
                            learning_rate=0.2,
                            max_depth=3, 
-                           n_estimators=50, 
-                           alpha=1
+                           n_estimators=60, 
+                           subsamples=0.6,
+                           alpha=1,
+                           gamma=0.001
                           )
 
 reg_xgb.fit(X_train, y_train)
@@ -379,19 +429,20 @@ reg_xgb.fit(X_train, y_train)
 y_pred = reg_xgb.predict(X_test)
 
 lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB.csv',stats_list,reg_xgb)
+
 ################################################### XGBoost GridSearchCV ##################################################
 
 print('\n')
 print('XGBoost GridSearchCV')
 print('\n')
 params = {
-        'colsample_bytree': [0.5,0.6,0.7],
-        'learning_rate':[0.1,0.2,0.3],
-        'n_estimators': [20,40,60],
-        'max_depth':[3,4,5],
-        'alpha':[1,10],
-        'gamma':[0.001,0.01,0.1],
-        'subsamples':[0.6,0.7,0.8]
+        'colsample_bytree': [0.6],
+        'learning_rate':[0.2],
+        'n_estimators': [60],
+        'max_depth':[3],
+        'alpha':[1],
+        'gamma':[0.001,],
+        'subsamples':[0.6]
         }
 reg_xgb = XGBRegressor()
 
@@ -411,35 +462,36 @@ print(gs.best_params_)
 print(gs.best_score_)
 print(np.sqrt(np.abs(gs.best_score_)))
 
-##################################################### LinReg ##############################################################
+##################################################### Ridge ##############################################################
 
 print('\n')
 print('Linear Regression - Ridge')
 print('\n')
-ridge = Ridge(alpha=.001, normalize=True)
+ridge = Ridge(alpha=.001, normalize=True,random_state=61)
 ridge.fit(X_train, y_train)
 y_pred = ridge.predict(X_test)
 lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsC.csv',stats_list,ridge)
 
-##################################################### Poly ###############################################################
-
-print('\n')
-print('Linear Regression - Poly')
-print('\n')
-poly = PolynomialFeatures(degree=3)
-X_poly = poly.fit_transform(X)
-X_train1, X_test1, y_train1, y_test1 = train_test_split(X_poly,y, test_size = 0.3, random_state=61)
-reg = LinearRegression().fit(X_train1, y_train1)
-y_pred = reg.predict(X_test1)
-
-lr_results(df,X_test1,y_test1,y_pred,path,'OPSpredictionsPoly.csv',stats_list,reg)
+###################################################### Poly ###############################################################
+# poor predictor
+#print('\n')
+#print('Linear Regression - Poly')
+#print('\n')
+#poly = PolynomialFeatures(degree=3)
+#X_poly = poly.fit_transform(X)
+#X_train1, X_test1, y_train1, y_test1 = train_test_split(X_poly,y, test_size = 0.3, random_state=61)
+#reg = LinearRegression().fit(X_train1, y_train1)
+#y_pred = reg.predict(X_test1)
+#calc_r_squared(X_test, y_test, y_pred)
+#
+#lr_results(df,X_test1,y_test1,y_pred,path,'OPSpredictionsPoly.csv',stats_list,reg)
 
 ################################################ Lasso ###################################################################
 
 print('\n')
 print('Linear Regression - Lasso')
 print('\n')
-lasso = Lasso(alpha=0.0001)
+lasso = Lasso(alpha=0.0001,random_state=61)
 lasso_coef = lasso.fit(X_train, y_train).coef_
 y_pred = lasso.predict(X_test)
 #print('\n')
@@ -468,31 +520,19 @@ param_grid = {
     'n_estimators': [1000]
 }
 # Create a based model
-rf = RandomForestRegressor()
+rf = RandomForestRegressor(random_state=61)
 # Instantiate the grid search model
 gs = GridSearchCV(estimator = rf, param_grid = param_grid, 
-                          cv = 3, n_jobs = -1, verbose = 2)
+                          cv = 2, n_jobs = -1, verbose = 2)
 
 gs.fit(X_train, y_train)
-pred = gs.predict(X_test)
+y_pred = gs.predict(X_test)
 
-lr_results(df,X_test,y_test,pred,path,'OPSpredictionsRF.csv',stats_list,gs)
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF.csv',stats_list,gs)
 
 print(gs.best_params_)
 print(gs.best_score_)
 print(np.sqrt(np.abs(gs.best_score_)))
-
-################################################## SVM ###################################################################
-
-print('\n')
-print('SVM')
-print('\n')
-
-svm_reg = SVR(kernel='rbf')
-svm_reg.fit(X_train,y_train)
-y_pred = svm_reg.predict(X_test)
-
-lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM.csv',stats_list,svm_reg)
 
 ################################################### SVM ###################################################################
 
@@ -516,4 +556,3 @@ lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM_GS.csv',stats_list,gs
 print(gssvm.best_params_)
 print(gssvm.best_score_)
 print(np.sqrt(np.abs(gssvm.best_score_)))
-#
