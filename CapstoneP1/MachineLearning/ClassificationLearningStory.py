@@ -38,6 +38,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import make_classification
 from sklearn.metrics import roc_curve
+from sklearn.svm import SVC
 from sklearn.svm import SVR
 import xgboost as xgb
 from xgboost import XGBRegressor
@@ -167,8 +168,7 @@ params = {
         'n_estimators': [100],
         'max_depth':[3],
         'alpha':[1],
-        'subsamples':[0.6],
-        'n_estimators':[100]
+        'subsamples':[0.6]
         }
 xgb_cls = XGBClassifier()
 gs = GridSearchCV(estimator=xgb_cls, 
@@ -271,6 +271,28 @@ rf_cls.fit(X_train,y_train)
 y_pred = rf_cls.predict(X_test)
 classification_metrics(X_test, y_test, y_pred, rf_cls,'blue','RF','Random Forests ROC Curve\nBaseball Classification (1B vs SS)',False)
 
+
+########################################## SVM Classifier ################################################
+
+print('\n')
+print('SVM Classifier - Baseball')
+print('\n')
+params = {
+        'C': [0.1,1,10,20,100],
+        'gamma':[0.001,0.01,0.1,1,10,100]
+        }
+svm_cls = SVC(probability=True)
+gs = GridSearchCV(estimator=svm_cls, 
+                  param_grid=params, 
+                  cv=3,
+                  n_jobs=-1, 
+                  verbose=2
+                 )
+gs.fit(X_train,y_train)
+y_pred = gs.predict(X_test)
+print(gs.best_params_)
+print(gs.best_score_)
+classification_metrics(X_test, y_test, y_pred, gs,'brown','SVM','SVM ROC Curve\nBaseball Classification (1B vs SS)',False)
 ########################################## LR Classifier ################################################
 
 print('\n')
