@@ -49,8 +49,11 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR
+from statsmodels.graphics.regressionplots import *
 import xgboost as xgb
 from xgboost import XGBRegressor
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
 import seaborn as sns; sns.set(color_codes=True)
 from IPython.core.pylabtools import figsize
 import random
@@ -229,8 +232,8 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     leg=plt.legend()
     plt.show()
     plt.plot(y_pred, (y_pred-y_test), marker='.',linestyle='none',color='b')
-    plt.title('Actual OPS vs. Residuals')
-    plt.xlabel('Actual OPS')
+    plt.title('Predicted OPS vs. Residuals')
+    plt.xlabel('Predicted OPS')
     plt.ylabel('Residuals')
     plt.show()
     return True
@@ -348,7 +351,11 @@ df = dfbatting_player_stats
 
 df = df[( df['years_played'] > 11 ) & ( df['AB'] > 250 ) & ( df['OPS'] < 1.2 ) & ( df['OPS'] > .4 )]
 df = df.reset_index(drop=True)
-
+# 
+# drop outliers from df
+#
+dind = [3098,7698,6395,3404,6168,1159,2039] 
+df = df.drop(dind)
 ### position mapping from POS string to integer
 #POS_map = {'P':.10, 'C':.11, '1B':.12, '2B':.13, '3B':.14, 'SS':.15, 'OF':.16}
 #df['POSnum'] = df.POS.map(POS_map)
@@ -375,7 +382,8 @@ df.weight = df.weight.astype(int)
 df.height = df.height.astype(int)
 df = calc_BMI(df)
 
-feature_list =  ['age','nheight','nweight','POS_SS','POS_1B','POS_2B','POS_3B','POS_OF','POS_C','lag1_OPS','lag1_cOPS','lag1_nH','lag1_ncH','lag1_nHR','lag1_ncHR']
+feature_list =  ['age','nheight','nweight','POS_SS','POS_1B','POS_2B','POS_3B','POS_OF','POS_C','lag1_OPS','lag1_cOPS','lag1_nHR']
+#feature_list =  ['age','nheight','nweight','POS_SS','POS_1B','POS_2B','POS_3B','POS_OF','POS_C','lag1_OPS','lag1_cOPS','lag1_nH','lag1_ncH','lag1_nHR','lag1_ncHR']
 #feature_list =  ['yearnum','BMI','lag1_OPS']
 X = df[feature_list]
 y = df.OPS
@@ -389,6 +397,7 @@ y_test = df_test.OPS
 
 stats_list = ['yearID','playername','OPS','predOPS','error','AB','H','AVG','HR','3B','2B','1B','POS','SLG','OBP','age','height']
 
+#
 #################################################### XGBoost ###############################################################
 ##   learning_rate: step size shrinkage used to prevent overfitting. Range is [0,1]
 ##   max_depth: determines how deeply each tree is allowed to grow during any boosting round.
@@ -541,8 +550,8 @@ print('SVM with GridSearchCV')
 print('\n')
 
 params = {
-    'C': [0.1],
-    'gamma': [0.001]
+    'C': [0.1,1,10],
+    'gamma': [0.001, 0.01, 0.1, 1]
 }
 
 svm_reg1 = SVR(kernel='rbf')
@@ -556,3 +565,13 @@ lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM_GS.csv',stats_list,gs
 print(gssvm.best_params_)
 print(gssvm.best_score_)
 print(np.sqrt(np.abs(gssvm.best_score_)))
+
+################################################### ols ###################################################################
+
+print('\n')
+print('ols')
+print('\n')
+m = ols('OPS ~ age + nheight + nweight + POS_SS + POS_1B + POS_2B + POS_3B + POS_OF + POS_C + lag1_OPS + lag1_cOPS + lag1_nHR',df).fit()
+print(m.summary())
+plot_leverage_resid2(m)
+plt.show()
