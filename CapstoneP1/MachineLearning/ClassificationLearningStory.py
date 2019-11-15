@@ -17,6 +17,8 @@ import matplotlib.mlab as mlab
 import math
 from numpy.random import seed
 import random
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import ElasticNet
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
@@ -134,6 +136,13 @@ X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.4, random
 #the grid of parameters to search over
 #Cs = [0.001, 0.1, 1, 10, 100]
 
+########################################## NB Classifier ################################################
+
+nb_cls = MultinomialNB()
+nb_cls.fit(X_train,y_train)
+y_pred = nb_cls.predict(X_test)
+classification_metrics(X_test, y_test, y_pred, nb_cls,'yellow','LinReg', 'Male/Female Classification',False)
+
 ########################################## LR Classifier ################################################
 
 lr_cls = LogisticRegression()
@@ -215,8 +224,6 @@ leg = plt.legend()
 plt.show()
 
 feature_list =  ['height','weight','H','2B','3B','HR','OPS','OBP','SLG','SF','BB']
-X = df[feature_list]
-y = (df.POS == 'SS').values
 pct=.40
 df_train, df_test = split_df(df,pct)
 X_train = df_train[feature_list]
@@ -245,16 +252,6 @@ knn_cls.fit(X_train,y_train)
 y_pred = knn_cls.predict(X_test)
 classification_metrics(X_test, y_test, y_pred, knn_cls,'green','Knn k='+str(k), 'Knn ROC Curve\nBaseball Classification (1B vs SS)',False)
 
-########################################## Knn 7 ##################################################
-print('\n')
-print('Knn Classifier - Baseball')
-print('\n')
-k=7
-knn_cls = KNeighborsClassifier(n_neighbors=k)
-knn_cls.fit(X_train,y_train)
-y_pred = knn_cls.predict(X_test)
-classification_metrics(X_test, y_test, y_pred, knn_cls,'purple','Knn k='+str(k), 'Knn ROC Curve\nBaseball Classification (1B vs SS)',False)
-
 ########################################## Random Forest ##################################################
 
 print('\n')
@@ -278,8 +275,8 @@ print('\n')
 print('SVM Classifier - Baseball')
 print('\n')
 params = {
-        'C': [0.1,1,10,20,100],
-        'gamma':[0.001,0.01,0.1,1,10,100]
+        'C': [0.1,1,10],
+        'gamma':[0.001,0.01,0.1]
         }
 svm_cls = SVC(probability=True)
 gs = GridSearchCV(estimator=svm_cls, 
@@ -293,6 +290,18 @@ y_pred = gs.predict(X_test)
 print(gs.best_params_)
 print(gs.best_score_)
 classification_metrics(X_test, y_test, y_pred, gs,'brown','SVM','SVM ROC Curve\nBaseball Classification (1B vs SS)',False)
+
+########################################## NB Classifier ################################################
+
+print('\n')
+print('Naive Bayes Classifier - Baseball')
+print('\n')
+#nb_cls = GaussianNB()
+nb_cls = MultinomialNB(alpha=0.001)
+nb_cls.fit(X_train,y_train)
+y_pred = nb_cls.predict(X_test)
+classification_metrics(X_test, y_test, y_pred, nb_cls,'yellow','Naive Bays', 'Naive Bayes ROC Curve\nBaseball Classification',False)
+
 ########################################## LR Classifier ################################################
 
 print('\n')
