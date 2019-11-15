@@ -373,7 +373,7 @@ dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut']
                                                 (dfbatting_player_stats['finalGame'] <= END_DATE)]
 df = dfbatting_player_stats
 
-df = df[( df['years_played'] > 11 ) & ( df['AB'] > 400 ) & ( df['OPS'] < 1.2 ) & ( df['OPS'] > .5 )]
+df = df[( df['years_played'] > 11 ) & ( df['AB'] > 350 ) & ( df['OPS'] < 1.2 ) & ( df['OPS'] > .5 )]
 df = df.reset_index(drop=True)
 
 df = normalize_categories(df,['POS'],['POS'])
@@ -400,7 +400,7 @@ feature_list =  ['age','nheight','nweight','POS_SS','POS_1B','POS_2B','POS_3B','
 #feature_list =  ['yearnum','BMI','lag1_OPS']
 X = df[feature_list]
 y = df.OPS
-pct = 0.40
+pct = 0.30
 
 df_train, df_test = split_df(df,pct)
 df900 = df_train[df_train['OPS'] >= .900]
