@@ -94,11 +94,7 @@ def add_replicates_OPS(df,dfsub,numofreplsub):
     df['datatype'] = 'Actuals'
     df = pd.concat([df,dfoversample],ignore_index=True, sort=False)
     df = df.reset_index(drop=True)
-    print('dfsub = ',len(dfsub))
-    print('dfoversample = ', len(dfoversample))
-    print('Number of Replicates = ', numofreplsub)
     return df
-    
 
 def calc_r_fit(x,y,coef):
     coeflist =  coef.tolist()
@@ -262,16 +258,6 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     plt.show()
     return True
 
-def batting_stars(df,OPSmarker,OPScnt):
-    dfstars = df[df['OPS'] >= OPSmarker]
-    dfstars = dfstars[['playerID','yearID']]
-    dfstars = dfstars.groupby('playerID').count()
-    dfstars.columns = ['starcnt']
-    dfstars = dfstars[dfstars['starcnt'] >= OPScnt]
-    dfstars = dfstars.reset_index()['playerID']
-    df = pd.merge(df,dfstars,on='playerID')
-    return df
-
 def calc_ops(df):    
     df['1B'] = df['H'] - ( df['2B'] + df['3B'] + df['HR'] )  
     df['TB'] =  df['1B'] + (df['2B'] * 2) + (df['3B'] * 3) + (df['HR'] * 4)                             
@@ -294,73 +280,6 @@ def calc_BMI(df):
     kilograms = df.weight * 0.453582
     BMI = kilograms / (meters ** 2)
     df['BMI'] = round(BMI,2)
-    return df
-
-def cummulative_STATS(df):
-    df['groupby'] = 1
-    dfsum = df.groupby('groupby').sum().reset_index(drop=True)
-    cAB = dfsum.AB.values[0]
-    cHR = dfsum.HR.values[0]
-    cH = dfsum.H.values[0]
-    cAVG = round(cH/cAB,3)
-    return cAB, cHR, cH, cAVG
-    
-
-#  calculate lag1 cumulative OPS for each player.
-def calc_lag1_cumulativeSTAT(df):
-#    df = df[df['playerID'].isin(['streuwa01'])]
-    playerlist = np.array(df.playerID.drop_duplicates())
-    start_yearnum = 1
-    lag1_cumulativeSTAT_list = []
-    cnt = 0
-    for p in playerlist:
-        cnt += 1
-        yn_list = df[df['playerID'] == p]['yearnum'].sort_values().values
-        ABvalue1 = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0])]['AB'].values[0]
-        HRvalue1 = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0])]['HR'].values[0]
-        Hvalue1 = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0])]['H'].values[0]
-        AVGvalue1 = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0])]['AVG'].values[0]
-        yearid = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0] )]['yearID'].values[0]
-        lag1_cumulativeSTAT_list.append((yearid,p,ABvalue1,
-                                                  HRvalue1,
-                                                  Hvalue1,
-                                                  AVGvalue1,
-                                                  ABvalue1,
-                                                  HRvalue1,
-                                                  Hvalue1,
-                                                  AVGvalue1
-                                        ))
-        print(cnt,yearid,p)
-        for i in range(0,len(yn_list)-1,1):
-            # sum stats over lag1
-            end_yearnum = yn_list[i + 1]
-            yn = yn_list[i]
-            dfp = df[( df['playerID'] == p ) & ( df['yearnum'] < end_yearnum )]
-            lag1_ABvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == yn )]['AB'].values[0]
-            lag1_HRvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == yn )]['HR'].values[0]
-            lag1_Hvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == yn )]['H'].values[0]
-            lag1_AVGvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == yn )]['AVG'].values[0]
-            yearid = df[( df['playerID'] == p ) & ( df['yearnum'] == end_yearnum )]['yearID'].values[0]
-            lag1_cABvalue, lag1_cHRvalue, lag1_cHvalue, lag1_cAVGvalue = cummulative_STATS(dfp)
-            lag1_cumulativeSTAT_list.append((yearid,p,lag1_cABvalue ,
-                                                      lag1_cHRvalue ,
-                                                      lag1_cHvalue ,
-                                                      lag1_cAVGvalue ,
-                                                      lag1_ABvalue,
-                                                      lag1_HRvalue,
-                                                      lag1_Hvalue,
-                                                      lag1_AVGvalue
-                                           ))
-    dflag1 = pd.DataFrame(lag1_cumulativeSTAT_list,columns=['yearID','playerID','lag1_cAB',
-                                                                                'lag1_cHR' ,
-                                                                                'lag1_cH' ,
-                                                                                'lag1_cAVG' ,
-                                                                                'lag1_AB',
-                                                                                'lag1_HR',
-                                                                                'lag1_H',
-                                                                                'lag1_AVG'])
-    df = pd.merge(df,dflag1,on=['yearID','playerID'])
-    df = df.reset_index(drop=True)
     return df
         
 # set path for reading Lahman baseball statistics
