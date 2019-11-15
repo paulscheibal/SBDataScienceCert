@@ -76,6 +76,30 @@ inf_df = lambda df: df.loc[ ( (df == np.inf) | (df == -np.inf) ).any(axis=0)]
 
 nans_df = lambda df: df.loc[df.isnull().any(axis=1)]
 
+def OPS_samples(ind):
+    return np.random.choice(ind, len(ind))
+    
+def bootstrap_replicate_OPS(df,n):
+    ind = OPS_samples(df.index,n)
+    df = df.loc[ind,:]
+    return df
+
+def add_replicates_OPS(df,dfsub,numofreplsub):
+    dfoversample = pd.DataFrame()
+    for i in range(0,numofreplsub):
+        dfreplind = OPS_samples(dfsub.index)
+        dfrepl = dfsub.loc[dfreplind,:]
+        dfoversample = pd.concat([dfoversample,dfrepl],ignore_index=True, sort=False)
+    dfoversample['datatype'] = 'Replicates'
+    df['datatype'] = 'Actuals'
+    df = pd.concat([df,dfoversample],ignore_index=True, sort=False)
+    df = df.reset_index(drop=True)
+    print('dfsub = ',len(dfsub))
+    print('dfoversample = ', len(dfoversample))
+    print('Number of Replicates = ', numofreplsub)
+    return df
+    
+
 def calc_r_fit(x,y,coef):
     coeflist =  coef.tolist()
     correlation = np.corrcoef(x, y)[0,1]
@@ -204,7 +228,7 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     
     acc = df_results['error']
     ptile = np.percentile(acc,[2.5,97.5])
-    print('Error Confidence Interval: ',ptile)
+    print('95 Pct Error Confidence Interval: ',ptile)
 #    plt.plot(df_out['OPS'], df_out['predOPS'], marker='.',linestyle='none')
 #    plt.title('Actual OPS vs. Predicted OPS')
 #    plt.xlabel('Actual OPS')
@@ -349,21 +373,11 @@ dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut']
                                                 (dfbatting_player_stats['finalGame'] <= END_DATE)]
 df = dfbatting_player_stats
 
-df = df[( df['years_played'] > 11 ) & ( df['AB'] > 250 ) & ( df['OPS'] < 1.2 ) & ( df['OPS'] > .4 )]
+df = df[( df['years_played'] > 11 ) & ( df['AB'] > 400 ) & ( df['OPS'] < 1.2 ) & ( df['OPS'] > .5 )]
 df = df.reset_index(drop=True)
-# 
-# drop outliers from df
-#
-dind = [3098,7698,6395,3404,6168,1159,2039] 
-df = df.drop(dind)
-### position mapping from POS string to integer
-#POS_map = {'P':.10, 'C':.11, '1B':.12, '2B':.13, '3B':.14, 'SS':.15, 'OF':.16}
-#df['POSnum'] = df.POS.map(POS_map)
 
 df = normalize_categories(df,['POS'],['POS'])
 df = normalize_values(df,['height','weight','lag1_H','lag1_cH','lag1_HR','lag1_cHR'],['nheight','nweight','lag1_nH','lag1_ncH','lag1_nHR','lag1_ncHR'],'minmax')
-
-
 
 # read team mapping and create a mapping function from string to integer
 teamsf = path + 'teams_list.csv'
@@ -371,8 +385,7 @@ dfteams = pd.read_csv(teamsf)
 teams_map = pd.Series(dfteams.index,index=dfteams.teamID).to_dict()
 df.teamID = df.teamID.map(teams_map)
 
-df['yearnum'] = df.yearID - df.debut.dt.year + 1
-
+#df['yearnum'] = df.yearID - df.debut.dt.year + 1
 #perf_classes(df,1.2,.9000,.8334,.7667,.7000,.6000,5000)
 #pc = [10,1.2,1.,.9000,.8334,.7667,0]
 #df = perf_classes(df,pc)
@@ -387,57 +400,64 @@ feature_list =  ['age','nheight','nweight','POS_SS','POS_1B','POS_2B','POS_3B','
 #feature_list =  ['yearnum','BMI','lag1_OPS']
 X = df[feature_list]
 y = df.OPS
-pct = 0.30
+pct = 0.40
 
 df_train, df_test = split_df(df,pct)
+df900 = df_train[df_train['OPS'] >= .900]
+df800 = df_train[ (df_train['OPS'] >= .800) & (df_train['OPS'] < .900) ]
+df_train = add_replicates_OPS(df,df900,round(len(df800)/len(df900)))
+df650 = df_train[df_train['OPS'] <= .650]
+df750 = df_train[ (df_train['OPS'] > .650) & (df_train['OPS'] <= .750) ]
+df_train = add_replicates_OPS(df,df650,round(len(df750)/len(df650)))
+
 X_train = df_train[feature_list]
 y_train = df_train.OPS
 X_test = df_test[feature_list]
 y_test = df_test.OPS
-
+    
 stats_list = ['yearID','playername','OPS','predOPS','error','AB','H','AVG','HR','3B','2B','1B','POS','SLG','OBP','age','height']
 
-#
-#################################################### XGBoost ###############################################################
-##   learning_rate: step size shrinkage used to prevent overfitting. Range is [0,1]
-##   max_depth: determines how deeply each tree is allowed to grow during any boosting round.
-##   subsample: percentage of samples used per tree. Low value can lead to underfitting.
-##   colsample_bytree: percentage of features used per tree. High value can lead to overfitting.
-##   n_estimators: number of trees you want to build.
-##   objective: determines the loss function to be used like reg:linear for regression problems, 
-##              reg:logistic for classification problems with only decision, binary:logistic for 
-##              classification problems with probability.
-#
-##   XGBoost also supports regularization parameters to penalize models as they become more complex and reduce them to simple (
-##   parsimonious) models.
 ##
-##   gamma: controls whether a given node will split based on the expected reduction in loss after the split. 
-##          A higher value leads to fewer splits. Supported only for tree-based learners.
-##   alpha: L1 regularization on leaf weights. A large value leads to more regularization.
-##          lambda: L2 regularization on leaf weights and is smoother than L1 regularization.
+##################################################### XGBoost ###############################################################
+###   learning_rate: step size shrinkage used to prevent overfitting. Range is [0,1]
+###   max_depth: determines how deeply each tree is allowed to grow during any boosting round.
+###   subsample: percentage of samples used per tree. Low value can lead to underfitting.
+###   colsample_bytree: percentage of features used per tree. High value can lead to overfitting.
+###   n_estimators: number of trees you want to build.
+###   objective: determines the loss function to be used like reg:linear for regression problems, 
+###              reg:logistic for classification problems with only decision, binary:logistic for 
+###              classification problems with probability.
+##
+###   XGBoost also supports regularization parameters to penalize models as they become more complex and reduce them to simple (
+###   parsimonious) models.
+###
+###   gamma: controls whether a given node will split based on the expected reduction in loss after the split. 
+###          A higher value leads to fewer splits. Supported only for tree-based learners.
+###   alpha: L1 regularization on leaf weights. A large value leads to more regularization.
+###          lambda: L2 regularization on leaf weights and is smoother than L1 regularization.
+##
+##################################################### XGBoost ##############################################################
 #
-#################################################### XGBoost ##############################################################
-
-print('\n')
-print('XGBoost Regressor')
-print('\n')
-# 'Create instance of XGBoost
-
-reg_xgb = xgb.XGBRegressor(objective ='reg:squarederror', 
-                           colsample_bytree=0.6, 
-                           learning_rate=0.2,
-                           max_depth=3, 
-                           n_estimators=60, 
-                           subsamples=0.6,
-                           alpha=1,
-                           gamma=0.001
-                          )
-
-reg_xgb.fit(X_train, y_train)
-
-y_pred = reg_xgb.predict(X_test)
-
-lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB.csv',stats_list,reg_xgb)
+##print('\n')
+##print('XGBoost Regressor')
+##print('\n')
+### 'Create instance of XGBoost
+##
+##reg_xgb = xgb.XGBRegressor(objective ='reg:squarederror', 
+##                           colsample_bytree=0.6, 
+##                           learning_rate=0.2,
+##                           max_depth=4, 
+##                           n_estimators=60, 
+##                           subsamples=0.6,
+##                           alpha=1,
+##                           gamma=0.001
+##                          )
+##
+##reg_xgb.fit(X_train, y_train)
+##
+##y_pred = reg_xgb.predict(X_test)
+##
+##lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB.csv',stats_list,reg_xgb)
 
 ################################################### XGBoost GridSearchCV ##################################################
 
@@ -448,12 +468,12 @@ params = {
         'colsample_bytree': [0.6],
         'learning_rate':[0.2],
         'n_estimators': [60],
-        'max_depth':[3],
+        'max_depth':[4],
         'alpha':[1],
-        'gamma':[0.001,],
+        'gamma':[0.001],
         'subsamples':[0.6]
         }
-reg_xgb = XGBRegressor()
+reg_xgb = XGBRegressor(objective = 'reg:squarederror')
 
 gs = GridSearchCV(estimator=reg_xgb, 
                   param_grid=params, 
@@ -480,20 +500,6 @@ ridge = Ridge(alpha=.001, normalize=True,random_state=61)
 ridge.fit(X_train, y_train)
 y_pred = ridge.predict(X_test)
 lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsC.csv',stats_list,ridge)
-
-###################################################### Poly ###############################################################
-# poor predictor
-#print('\n')
-#print('Linear Regression - Poly')
-#print('\n')
-#poly = PolynomialFeatures(degree=3)
-#X_poly = poly.fit_transform(X)
-#X_train1, X_test1, y_train1, y_test1 = train_test_split(X_poly,y, test_size = 0.3, random_state=61)
-#reg = LinearRegression().fit(X_train1, y_train1)
-#y_pred = reg.predict(X_test1)
-#calc_r_squared(X_test, y_test, y_pred)
-#
-#lr_results(df,X_test1,y_test1,y_pred,path,'OPSpredictionsPoly.csv',stats_list,reg)
 
 ################################################ Lasso ###################################################################
 
@@ -523,16 +529,16 @@ print('\n')
 param_grid = {
     'bootstrap': [True],
     'max_depth': [300],
-    'max_features': [3,4],
+    'max_features': [5],
     'min_samples_leaf': [5],
     'min_samples_split': [12],
-    'n_estimators': [1000]
+    'n_estimators': [2500]
 }
 # Create a based model
 rf = RandomForestRegressor(random_state=61)
 # Instantiate the grid search model
 gs = GridSearchCV(estimator = rf, param_grid = param_grid, 
-                          cv = 2, n_jobs = -1, verbose = 2)
+                          cv = 3, n_jobs = -1, verbose = 2)
 
 gs.fit(X_train, y_train)
 y_pred = gs.predict(X_test)
@@ -540,11 +546,9 @@ y_pred = gs.predict(X_test)
 lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF.csv',stats_list,gs)
 
 print(gs.best_params_)
-print(gs.best_score_)
-print(np.sqrt(np.abs(gs.best_score_)))
 
 ################################################### SVM ###################################################################
-
+#
 print('\n')
 print('SVM with GridSearchCV')
 print('\n')
@@ -563,10 +567,8 @@ y_pred = gssvm.predict(X_test)
 
 lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM_GS.csv',stats_list,gssvm)
 print(gssvm.best_params_)
-print(gssvm.best_score_)
-print(np.sqrt(np.abs(gssvm.best_score_)))
 
-################################################### ols ###################################################################
+################################################## ols ###################################################################
 
 print('\n')
 print('ols')
