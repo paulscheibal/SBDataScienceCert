@@ -79,20 +79,121 @@ def save_stats_file(path, fn, df):
 # function to take a baseball dataframe by yearID, playerID and AB and return the average number of at bats 
 # for a player during their lifetime and total number of year the player by played in major leagues
 def avg_yearly_AB(df):
-    dfgrp = df.groupby('playerID').mean().round()
-    del dfgrp['yearID']
-    dfgrp = dfgrp.reset_index()
-    dfgrp.columns = ['playerID','avg_yrly_AB']
-    dfgrp2 = df.groupby('playerID').count()
-    del dfgrp2['AB']
-    dfgrp2 = dfgrp2.reset_index()
-    dfgrp2.columns = ['playerID','years_played']
-    dfgrp = pd.merge(dfgrp, dfgrp2, on='playerID')
-    dfgrp = dfgrp.reset_index(drop=True)
-    dfgrp.avg_yrly_AB = dfgrp.avg_yrly_AB.astype(np.int64)
-    return dfgrp
-    
+    dfmean = df[['playerID','AB']].groupby('playerID').mean().round()
+    dfmean.columns = ['avg_yrly_AB']
+    dfmean = dfmean.reset_index()
+    df = pd.merge(df,dfmean,on='playerID')
+    dfcnt = df[['playerID','yearID']].groupby('playerID').count()
+    dfcnt.columns = ['years_played']
+    dfcnt = dfcnt.reset_index()
+    df = pd.merge(df,dfcnt,on='playerID')
+    df = df.reset_index(drop=True)
+    df.avg_yrly_AB = df.avg_yrly_AB.astype(np.int64)
+    df.years_played = df.years_played.astype(np.int64)
+    return df
 
+def cummulative_STATS(df):
+    df['groupby'] = 1
+    dfsum = df.groupby('groupby').sum().reset_index(drop=True)
+    cAB = dfsum.AB.values[0]
+    cHR = dfsum.HR.values[0]
+    cH = dfsum.H.values[0]
+    cAVG = round(cH/cAB,3)
+    return cAB, cHR, cH, cAVG
+
+#  calculate lag1 cumulative OPS for each player.
+def calc_lag1_cumulativeSTAT(df):
+#    df = df[df['playerID'].isin(['streuwa01'])]
+    playerlist = np.array(df.playerID.drop_duplicates())
+    start_yearnum = 1
+    lag1_cumulativeSTAT_list = []
+    cnt = 0
+    for p in playerlist:
+        cnt += 1
+        yn_list = df[df['playerID'] == p]['yearnum'].sort_values().values
+        ABvalue1 = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0])]['AB'].values[0]
+        HRvalue1 = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0])]['HR'].values[0]
+        Hvalue1 = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0])]['H'].values[0]
+        AVGvalue1 = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0])]['AVG'].values[0]
+        yearid = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0] )]['yearID'].values[0]
+        lag1_cumulativeSTAT_list.append((yearid,p,ABvalue1,
+                                                  HRvalue1,
+                                                  Hvalue1,
+                                                  AVGvalue1,
+                                                  ABvalue1,
+                                                  HRvalue1,
+                                                  Hvalue1,
+                                                  AVGvalue1
+                                        ))
+        print(cnt,yearid,p)
+        for i in range(0,len(yn_list)-1,1):
+            # sum stats over lag1
+            end_yearnum = yn_list[i + 1]
+            yn = yn_list[i]
+            dfp = df[( df['playerID'] == p ) & ( df['yearnum'] < end_yearnum )]
+            lag1_ABvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == yn )]['AB'].values[0]
+            lag1_HRvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == yn )]['HR'].values[0]
+            lag1_Hvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == yn )]['H'].values[0]
+            lag1_AVGvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == yn )]['AVG'].values[0]
+            yearid = df[( df['playerID'] == p ) & ( df['yearnum'] == end_yearnum )]['yearID'].values[0]
+            lag1_cABvalue, lag1_cHRvalue, lag1_cHvalue, lag1_cAVGvalue = cummulative_STATS(dfp)
+            lag1_cumulativeSTAT_list.append((yearid,p,lag1_cABvalue ,
+                                                      lag1_cHRvalue ,
+                                                      lag1_cHvalue ,
+                                                      lag1_cAVGvalue ,
+                                                      lag1_ABvalue,
+                                                      lag1_HRvalue,
+                                                      lag1_Hvalue,
+                                                      lag1_AVGvalue
+                                           ))
+    dflag1 = pd.DataFrame(lag1_cumulativeSTAT_list,columns=['yearID','playerID','lag1_cAB',
+                                                                                'lag1_cHR' ,
+                                                                                'lag1_cH' ,
+                                                                                'lag1_cAVG' ,
+                                                                                'lag1_AB',
+                                                                                'lag1_HR',
+                                                                                'lag1_H',
+                                                                                'lag1_AVG'])
+    df = pd.merge(df,dflag1,on=['yearID','playerID'])
+    df = df.reset_index(drop=True)
+    return df
+
+##  calculate lag1 cumulative OPS for each player.
+#def calc_lag1_cumulativeOPS(df):
+##    df = df[df['playerID'].isin(['streuwa01'])]
+#    playerlist = np.array(df.playerID.drop_duplicates())
+#    start_yearnum = 1
+#    lag1_cumulativeOPS_list = []
+#    cnt = 0
+#    for p in playerlist:
+#        cnt += 1
+#        yn_list = df[df['playerID'] == p]['yearnum'].sort_values().values
+#        OPSvalue1 = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0])]['OPS'].values[0]
+#        yearid = df[( df['playerID'] == p ) & ( df['yearnum'] == yn_list[0] )]['yearID'].values[0]
+#        print(cnt,yearid,p)
+#        lag1_cumulativeOPS_list.append((yearid,p,OPSvalue1,OPSvalue1))
+#        for i in range(0,len(yn_list)-1,1):
+#            # sum stats over lag1
+#            end_yearnum = yn_list[i + 1]
+#            yn = yn_list[i]
+#            dfp = df[( df['playerID'] == p ) & ( df['yearnum'] < end_yearnum )]
+#            lag1_OPSvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == yn )]['OPS'].values[0]
+#            OPSvalue = df[( df['playerID'] == p ) & ( df['yearnum'] == end_yearnum )]['OPS'].values[0]
+#            yearid = df[( df['playerID'] == p ) & ( df['yearnum'] == end_yearnum )]['yearID'].values[0]
+#            lag1_cumulativeOPS = round(OPS_val(dfp),3)
+#            lag1_cumulativeOPS_list.append((yearid,p,lag1_cumulativeOPS,lag1_OPSvalue))
+#    dflag1 = pd.DataFrame(lag1_cumulativeOPS_list,columns=['yearID','playerID','lag1_cOPS','lag1_OPS'])
+#    df = pd.merge(df,dflag1,on=['yearID','playerID'])
+#    df = df.reset_index(drop=True)
+#    return df
+
+def calc_BMI(df):
+    # baseball height is in inches and weight is in pounds.  BMI needs kilograms and meters
+    meters = df.height * 0.0254
+    kilograms = df.weight * 0.453582
+    BMI = kilograms / (meters ** 2)
+    df['BMI'] = BMI
+    return df
 
 ######################################################################################
 #
@@ -108,7 +209,7 @@ hitsf = path + hitsfile
 dfhits = pd.read_csv(hitsf)
 dfhits = dfhits.reset_index(drop=True)
 # Only need a subset of the columns for this excersize for OPS calculation
-dfhits_ops = dfhits.loc[:, ['playerID','yearID','teamID','G','AB','H','2B','3B','HR','SF','BB','HBP']]
+dfhits_ops = dfhits.loc[:, ['playerID','yearID','teamID','stint','G','AB','H','2B','3B','HR','SF','BB','HBP']]
 print(dfhits_ops.head(20))
 print(dfhits_ops.info())
 
@@ -139,7 +240,7 @@ print(dffielding_primary_position)
 playersf = path + peoplefile
 dfplayers = pd.read_csv(playersf)
 dfplayers = dfplayers.reset_index(drop=True)
-dfplayers_ops = dfplayers.loc[:,['playerID','birthYear','birthMonth','birthDay','nameFirst','nameLast','debut','finalGame']]
+dfplayers_ops = dfplayers.loc[:,['playerID','birthYear','birthMonth','birthDay','nameFirst','nameLast','debut','finalGame','weight','height']]
 
 # merge two files together using left outer join.  Some fielding records are missing
 dfplayers_ops = pd.merge(dfplayers_ops, dffielding_primary_position, on='playerID', how='left')
@@ -162,6 +263,8 @@ teamsf = path + teamfile
 dfteams = pd.read_csv(teamsf)
 dfteams = dfteams.reset_index(drop=True)
 dfteams_ops= dfteams.loc[:,['yearID','teamID','franchID','name']]
+print(dfteams_ops)
+dfteams_ops.columns = ['yearID','teamID','franchID','teamname']
 print(dfteams_ops.head(20))
 print(dfteams_ops.info())
 print('Data Sources Initial Assessment END=============================================')
@@ -331,12 +434,39 @@ print('\n')
 ######################################################################################
 print('Referential Integrity Check BEGIN================= ===========================')
 print('\n')
+#
+# IF a player played for more than one team in a year, take the last team played for as team
+#
+dfhits_team = dfhits_ops_final[['yearID','playerID','teamID','stint']]
+dfhits_team = dfhits_team.sort_values(['yearID','playerID','stint'])
+dfhits_team = dfhits_team.groupby(['yearID','playerID']).last()
+dfhits_team = dfhits_team.reset_index()
+dfhits_team = dfhits_team.drop(['stint'],axis=1)
+dfhits_ops_final = dfhits_ops_final.drop(['stint'],axis=1)
+print(dfhits_team)
+print(len(dfhits_team))
+print(dfhits_team[dfhits_team['playerID']== 'riverre01'])
+print(dfhits_team.info())
+dfhits_team = pd.merge(dfhits_team,dfteams_ops,on=['yearID','teamID'],how='left')
+print(dfhits_team)
+print(dfhits_team.info())
+print(dfhits_team[dfhits_team['playerID']== 'riverre01'])
+
 # join batting to people (players) as inner join
 print('Joining batting to players ---------------------------------------------------')
 print('\n')
-# could be multiple occurrences of a player by year as he could have played for multiple teams.  only interested in tatals for year.
+## could be multiple occurrences of a player by year as he could have played for multiple teams.  only interested in tatals for year.
+#print(dfhits_ops_final.info())
+#dfdups = dfhits_ops_final[['yearID','teamID','teamname']].drop_duplicates()
+#print(dfdups.info())
+
 dfhits_ops_final = dfhits_ops_final.groupby(['yearID','playerID']).sum()
 dfhits_ops_final = dfhits_ops_final.reset_index()
+dfhits_ops_final = pd.merge(dfhits_ops_final,dfhits_team,on=['yearID','playerID'],how='left')
+
+print(dfhits_ops_final.info())
+print(dfhits_ops_final[dfhits_ops_final['playerID']== 'riverre01'])
+
 print('Before joining batting to players---------------------------------------------')
 print('\n')
 print(dfhits_ops_final.info())
@@ -346,6 +476,14 @@ results = set(stbatting).difference(set(stplayers))
 print(results)
 
 dfbatting_player_stats = pd.merge(dfhits_ops_final,dfplayers_ops_final,on='playerID')
+print(dfbatting_player_stats.info())
+print(dfbatting_player_stats[['yearID','playerID','teamID','weight','height','teamname']])
+print(max(dfbatting_player_stats.weight))
+print(max(dfbatting_player_stats.height))
+print(dfbatting_player_stats[dfbatting_player_stats['playerID']== 'riverre01'])
+dfbatting_nan = nans_df(dfbatting_player_stats)
+print(dfbatting_nan)
+
 # no need to have pitchers in batters information.  We are looking at position players only
 # dfpitchers wil lbe used later on for getting rid of fangraphs pitchers
 dfpitchers = dfbatting_player_stats[dfbatting_player_stats['POS_Cat'] == 'Pitcher']
@@ -359,6 +497,7 @@ print('After joining batting to players-----------------------------------------
 print('\n')
 print(dfbatting_player_stats.head(20))
 print(dfbatting_player_stats.info())
+print(dfpitchers.info())
 
 # set of playerID's from batting and set from players.  Do difference of batting(playerID) minus player(playerID)
 # should get null set
@@ -398,8 +537,11 @@ print('Adding additional columns START====-=====================================
 print('\n')
 print('Adding avg_yrly_AB and years_played -------------------------------------------')
 print('\n')
-dfstats = avg_yearly_AB(dfbatting_player_stats.loc[:,['yearID','playerID','AB']])
-dfbatting_player_stats = pd.merge(dfbatting_player_stats , dfstats, on='playerID')
+
+dfbatting_player_stats = avg_yearly_AB(dfbatting_player_stats)
+print(dfbatting_player_stats)
+print(dfbatting_player_stats.info())
+
 # calculate metrics for each player by year (OPS, OBP, SLG, AVG)
 dfbatting_player_stats = calc_ops(dfbatting_player_stats)
 dfbatting_player_stats = calc_OPS_AVG(dfbatting_player_stats)
@@ -448,9 +590,15 @@ print(sum(dfab))
 dfbatting_player_stats = dfbatting_player_stats.dropna(axis=0,how='any')
 print(dfbatting_player_stats)
 print(dfbatting_player_stats.info())
+print(dfbatting_player_stats[dfbatting_player_stats['playerID']== 'riverre01'])
+dfbatting_player_stats = calc_BMI(dfbatting_player_stats)
+dfbatting_player_stats['yearnum'] = dfbatting_player_stats.yearID - dfbatting_player_stats.debut.dt.year + 1
+dfbatting_player_stats = calc_lag1_cumulativeOPS(dfbatting_player_stats)
 
 success = save_stats_file(path,'dfbatting_player_stats.csv', dfbatting_player_stats)
 success = save_stats_file(path,'dfpitchers.csv', dfpitchers)
 
 print(success)
+
+
 
