@@ -76,6 +76,16 @@ inf_df = lambda df: df.loc[ ( (df == np.inf) | (df == -np.inf) ).any(axis=0)]
 
 nans_df = lambda df: df.loc[df.isnull().any(axis=1)]
 
+def classify_OPS(opslst,pc,pcn):
+    opscls_lst = []
+    for opsval in opslst:
+        for i in range(0,len(pc)-1):
+            if opsval <= pc[i] and opsval > pc[i+1]:
+               opscls = i + 1
+               opscls_lst.append(opscls)
+               break
+    return opscls_lst
+
 def OPS_samples(ind):
     return np.random.choice(ind, len(ind))
     
@@ -205,13 +215,14 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     df_results['abserror'] = np.abs(100 * ( ( df_results['OPS'] - df_results['predOPS'] ) / df_results['OPS']))
     #
     df_results['predOPS'] = df_results['predOPS']
-    df_results['AVG'] = df_results['AVG']
+    df_results['OPS'] = df_results['OPS']
     df_results['error'] = df_results['error']
+#    df_results['aclass'] = acl 
+#    df_results['pclass'] = pcl 
     df_out = df_results[stats_list]
     save_stats_file(path,fn, df_out)
     #  calculate Rsquared, Adj Rsquared, MSE, RMSE and Fstatistic using my routine
     Rsquared, AdjRsquared, MSE, RMSE, Fstatistic, MeanOfError, StdOfError, AbsErrorSum = calc_regression_stats(X_test,y_test,y_pred)
-    #
     print('R Squared: %1.4f' % Rsquared)
     print('Adjusted R Squared: %1.4f' % AdjRsquared)
     print('F Statistic: %1.4f' % Fstatistic)
@@ -223,14 +234,8 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     print('Pct Std Dev Error: %1.4f' % StdOfError)
     
     acc = df_results['error']
-    ptile = np.percentile(acc,[2.5,97.5])
+    ptile = np.percentile(acc,[2.5,95.5])
     print('95 Pct Error Confidence Interval: ',ptile)
-#    plt.plot(df_out['OPS'], df_out['predOPS'], marker='.',linestyle='none')
-#    plt.title('Actual OPS vs. Predicted OPS')
-#    plt.xlabel('Actual OPS')
-#    plt.ylabel('Predicted OPS')
-#    plt.show()
-    # use the function regplot to make a scatterplot
     sns.regplot(x=df_out['OPS'], y=df_out['predOPS'],
                 line_kws={"color":"r","alpha":0.7,"lw":5},
                 scatter_kws={"color":"b","s":8}
@@ -285,18 +290,32 @@ def calc_BMI(df):
 # set path for reading Lahman baseball statistics
 path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
 
-battingf = path + 'dfbatting_player_stats.csv'
+battingf = path + 'dfbatting_player_stats_full.csv'
 dfbatting_player_stats = pd.read_csv(battingf,parse_dates=['debut','finalGame','birthdate'])
 
 dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut'] >= START_DATE) &
                                                 (dfbatting_player_stats['finalGame'] <= END_DATE)]
 df = dfbatting_player_stats
 
-df = df[( df['years_played'] > 11 ) & ( df['AB'] > 350 ) & ( df['OPS'] < 1.2 ) & ( df['OPS'] > .5 )]
 df = df.reset_index(drop=True)
 
+df = df[( df['OPS'] >= .5) & ( df['OPS'] <= 1.1) & (df['age'] > 22) ]
+#lst = [278,487,3354,861,233,380,36,107,597,369,368,370,397,524,532,495,3476,3596,4398,4891,4174,1020,3254,309,766,3655,271,1029,3581,3054,4595,4075,2572,999,530]
+#df = df.drop(lst)
+
+
+
 df = normalize_categories(df,['POS'],['POS'])
-df = normalize_values(df,['height','weight','lag1_H','lag1_cH','lag1_HR','lag1_cHR'],['nheight','nweight','lag1_nH','lag1_ncH','lag1_nHR','lag1_ncHR'],'minmax')
+df = normalize_values(df,['age','height','weight','lag1_AVG','lag1_cAVG','lag1_H','lag1_cH','lag1_aH','lag1_pH','lag1_AB','lag1_cAB','lag1_aAB','lag1_pAB','lag1_cHR','lag1_HR'],['nage','nheight','nweight','lag1_nAVG','lag1_ncAVG','lag1_nH','lag1_ncH','lag1_naH','lag1_npH','lag1_nAB','lag1_ncAB','lag1_naAB','lag1_npAB','lag1_ncHR','lag1_nHR'],'zeromean')
+
+df['grandOPS'] = OPS_val(df)
+
+df['lag1_OPSavg'] = df['lag1_OPS']*.3 + df['lag1_cOPS']*.7
+df['lag1_cOPSdiff'] = (df['lag1_cOPS'] - df['lag1_OPS']) / df['lag1_cOPS']
+df['lag1_pOPSdiff'] = (df['lag1_cOPS'] - df['lag1_pOPS']) / df['lag1_cOPS']
+df['lag1_aOPSdiff'] = (df['lag1_cOPS'] - df['lag1_aOPS']) / df['lag1_cOPS']
+df['lag1_aOPSvar'] = -df['lag1_aOPSvar'] 
+df['lag1_pOPSvar'] = -df['lag1_pOPSvar'] 
 
 # read team mapping and create a mapping function from string to integer
 teamsf = path + 'teams_list.csv'
@@ -314,27 +333,46 @@ df.weight = df.weight.astype(int)
 df.height = df.height.astype(int)
 df = calc_BMI(df)
 
-feature_list =  ['age','nheight','nweight','POS_SS','POS_1B','POS_2B','POS_3B','POS_OF','POS_C','lag1_OPS','lag1_cOPS','lag1_nHR']
-#feature_list =  ['age','nheight','nweight','POS_SS','POS_1B','POS_2B','POS_3B','POS_OF','POS_C','lag1_OPS','lag1_cOPS','lag1_nH','lag1_ncH','lag1_nHR','lag1_ncHR']
-#feature_list =  ['yearnum','BMI','lag1_OPS']
+feature_list =  ['age','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','lag1_OPS','lag1_cOPS','lag1_OPSavg']
+#'lag1_nHR','lag1_AVG'
+#'lag1_nH','lag1_ncH','lag1_naH','lag1_npH','lag1_nAB','lag1_ncAB','lag1_naAB','lag1_npAB'
+#'lag1_cAVG','lag1_aAVG','lag1_pAVG'
+#'POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','POS_1B'
+# ['age','nheight','nweight','lag1_OPS','lag1_cOPS','lag1_nHR','lag1_ncH']
+
 X = df[feature_list]
 y = df.OPS
-pct = 0.30
+pct = 0.20
 
+#X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.3, random_state=42)
 df_train, df_test = split_df(df,pct)
-df900 = df_train[df_train['OPS'] >= .900]
-df800 = df_train[ (df_train['OPS'] >= .800) & (df_train['OPS'] < .900) ]
-df_train = add_replicates_OPS(df,df900,round(len(df800)/len(df900)))
-df650 = df_train[df_train['OPS'] <= .650]
-df750 = df_train[ (df_train['OPS'] > .650) & (df_train['OPS'] <= .750) ]
-df_train = add_replicates_OPS(df,df650,round(len(df750)/len(df650)))
-
 X_train = df_train[feature_list]
+
 y_train = df_train.OPS
 X_test = df_test[feature_list]
 y_test = df_test.OPS
     
 stats_list = ['yearID','playername','OPS','predOPS','error','AB','H','AVG','HR','3B','2B','1B','POS','SLG','OBP','age','height']
+
+
+#
+##################################################### poly ################################################################
+
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import PolynomialFeatures 
+from sklearn.metrics import mean_squared_error, r2_score
+
+print('\n')
+print('Linear Regression - Polynomial')
+print('\n')
+
+degree = 2
+model = make_pipeline(PolynomialFeatures(degree), LinearRegression())
+model.fit(X_train,y_train) 
+y_pred = model.predict(X_test)
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsPoly.csv',stats_list,model)
+r2 = r2_score(y_test,y_pred)
+print(r2)
 
 ##
 ##################################################### XGBoost ###############################################################
@@ -376,123 +414,124 @@ stats_list = ['yearID','playername','OPS','predOPS','error','AB','H','AVG','HR',
 ##
 ##y_pred = reg_xgb.predict(X_test)
 ##
-##lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB.csv',stats_list,reg_xgb)
+##lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB.csv',stats_list,reg_xgb
 
 ################################################### XGBoost GridSearchCV ##################################################
-
-print('\n')
-print('XGBoost GridSearchCV')
-print('\n')
-params = {
-        'colsample_bytree': [0.6],
-        'learning_rate':[0.2],
-        'n_estimators': [60],
-        'max_depth':[4],
-        'alpha':[1],
-        'gamma':[0.001],
-        'subsamples':[0.6]
-        }
-reg_xgb = XGBRegressor(objective = 'reg:squarederror')
-
-gs = GridSearchCV(estimator=reg_xgb, 
-                  param_grid=params, 
-                  cv=3,
-                  n_jobs=-1, 
-                  verbose=2
-                 )
-
-gs.fit(X_train, y_train)
-
-y_pred = gs.predict(X_test)
-
-lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB_GS.csv',stats_list,gs)
-print(gs.best_params_)
-print(gs.best_score_)
-print(np.sqrt(np.abs(gs.best_score_)))
-
-##################################################### Ridge ##############################################################
-
-print('\n')
-print('Linear Regression - Ridge')
-print('\n')
-ridge = Ridge(alpha=.001, normalize=True,random_state=61)
-ridge.fit(X_train, y_train)
-y_pred = ridge.predict(X_test)
-lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsC.csv',stats_list,ridge)
-
-################################################ Lasso ###################################################################
-
-print('\n')
-print('Linear Regression - Lasso')
-print('\n')
-lasso = Lasso(alpha=0.0001,random_state=61)
-lasso_coef = lasso.fit(X_train, y_train).coef_
-y_pred = lasso.predict(X_test)
-#print('\n')
-#print('Lasso ...')
-#print('\n')
-lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsLassoC.csv',stats_list,lasso)
-
-cols = feature_list
-plt.plot(range(len(cols)), lasso_coef)
-plt.xticks(range(len(cols)), cols, rotation=45)
-plt.ylabel('Coefficients')
-plt.show()
-
-################################################### Random Forests #########################################################
-
-print('\n')
-print('Random Forest Regressor')
-print('\n')
-# Create the parameter grid based on the results of random search 
-param_grid = {
-    'bootstrap': [True],
-    'max_depth': [300],
-    'max_features': [5],
-    'min_samples_leaf': [5],
-    'min_samples_split': [12],
-    'n_estimators': [2500]
-}
-# Create a based model
-rf = RandomForestRegressor(random_state=61)
-# Instantiate the grid search model
-gs = GridSearchCV(estimator = rf, param_grid = param_grid, 
-                          cv = 3, n_jobs = -1, verbose = 2)
-
-gs.fit(X_train, y_train)
-y_pred = gs.predict(X_test)
-
-lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF.csv',stats_list,gs)
-
-print(gs.best_params_)
-
-################################################### SVM ###################################################################
 #
-print('\n')
-print('SVM with GridSearchCV')
-print('\n')
+#print('\n')
+#print('XGBoost GridSearchCV')
+#print('\n')
+#params = {
+#        'colsample_bytree': [0.6],
+#        'learning_rate':[0.1],
+#        'n_estimators': [50],
+#        'max_depth':[3],
+#        'alpha':[1],
+#        'gamma':[0.001],
+#        'subsamples':[0.6]
+#        }
+#reg_xgb = XGBRegressor(objective = 'reg:squarederror')
+#
+#gs = GridSearchCV(estimator=reg_xgb, 
+#                  param_grid=params, 
+#                  cv=3,
+#                  n_jobs=-1, 
+#                  verbose=2
+#                 )
+#
+#gs.fit(X_train, y_train)
+#
+#y_pred = gs.predict(X_test)
+#
+#lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB_GS.csv',stats_list,gs)
+#print(gs.best_params_)
+#print(gs.best_score_)
+#print(np.sqrt(np.abs(gs.best_score_)))
 
-params = {
-    'C': [0.1,1,10],
-    'gamma': [0.001, 0.01, 0.1, 1]
-}
 
-svm_reg1 = SVR(kernel='rbf')
-
-gssvm = GridSearchCV(svm_reg1, param_grid=params, cv=3)
-
-gssvm.fit(X, y)
-y_pred = gssvm.predict(X_test)
-
-lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM_GS.csv',stats_list,gssvm)
-print(gssvm.best_params_)
-
+####################################################### Ridge ##############################################################
+#
+#print('\n')
+#print('Linear Regression - Ridge')
+#print('\n')
+#ridge = Ridge(alpha=.001, normalize=True,random_state=61)
+#ridge.fit(X_train, y_train)
+#y_pred = ridge.predict(X_test)
+#
+#lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsR.csv',stats_list,ridge)
+###
+################################################### Lasso ###################################################################
+#
+#print('\n')
+#print('Linear Regression - Lasso')
+#print('\n')
+#lasso = Lasso(alpha=0.0001,random_state=61)
+#lasso_coef = lasso.fit(X_train, y_train).coef_
+#y_pred = lasso.predict(X_test)
+#
+#lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsLassoC.csv',stats_list,lasso)
+#
+#cols = feature_list
+#plt.plot(range(len(cols)), lasso_coef)
+#plt.xticks(range(len(cols)), cols, rotation=45)
+#plt.ylabel('Coefficients')
+#plt.show()
+#
+##################################################### Random Forests #########################################################
+##
+#print('\n')
+#print('Random Forest Regressor')
+#print('\n')
+## Create the parameter grid based on the results of random search 
+#param_grid = {
+#    'bootstrap': [True],
+#    'max_depth': [300],
+#    'max_features': [2],
+#    'min_samples_leaf': [5],
+#    'min_samples_split': [12],
+#    'n_estimators': [1000]
+#}
+## Create a based model
+#rf = RandomForestRegressor(random_state=61)
+## Instantiate the grid search model
+#gs = GridSearchCV(estimator = rf, param_grid = param_grid, 
+#                          cv = 3, n_jobs = -1, verbose = 2)
+#
+#gs.fit(X_train, y_train)
+#y_pred = gs.predict(X_test)
+#
+#
+#lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF.csv',stats_list,gs)
+#
+#print(gs.best_params_)
+#
+#################################################### SVM ###################################################################
+##
+#print('\n')
+#print('SVM with GridSearchCV')
+#print('\n')
+#
+#params = {
+#    'C': [0.1,1,10],
+#    'gamma': [0.001, 0.01, 0.1, 1]
+#}
+#
+#svm_reg1 = SVR(kernel='rbf')
+#
+#gssvm = GridSearchCV(svm_reg1, param_grid=params, cv=3)
+#
+#gssvm.fit(X, y)
+#y_pred = gssvm.predict(X_test)
+#
+#lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM_GS.csv',stats_list,gssvm)
+#print(gssvm.best_params_)
+#
 ################################################## ols ###################################################################
-
-print('\n')
-print('ols')
-print('\n')
-m = ols('OPS ~ age + nheight + nweight + POS_SS + POS_1B + POS_2B + POS_3B + POS_OF + POS_C + lag1_OPS + lag1_cOPS + lag1_nHR',df).fit()
-print(m.summary())
-plot_leverage_resid2(m)
-plt.show()
+#
+#print('\n')
+#print('ols')
+#print('\n')
+#m = ols('OPS ~ age + grandOPS + lag1_OPS + lag1_cOPS',df).fit()
+#print(m.summary())
+#plot_leverage_resid2(m)
+#plt.show()
