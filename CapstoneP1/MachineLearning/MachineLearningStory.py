@@ -50,6 +50,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR
 from statsmodels.graphics.regressionplots import *
+from scipy.stats import probplot
 import xgboost as xgb
 from xgboost import XGBRegressor
 import statsmodels.api as sm
@@ -208,6 +209,40 @@ def calc_regression_stats(X,y,yp):
     StdOfError = np.std(error)
     return Rsquared, AdjRsquared, MSE, RMSE, Fstatistic, MeanOfError, StdOfError, AbsErrorSum
 
+def career_OPS_var(df,fn):
+    dfp = df[['playerID','OPS','predOPS']]
+    dfpn = df[['playerID','playername']].drop_duplicates()
+    dfp = dfp.groupby('playerID').mean()
+    dfp = dfp.reset_index(drop=False)
+    dfp['career_diff'] = (( dfp['OPS'] - dfp['predOPS'] ) / dfp['OPS']) * 100
+    dfp = dfp[dfp['career_diff'] > -20]
+    fnc = 'Career_' + fn
+    plt.hist(dfp.career_diff,bins=25)
+    plt.title('Error : Career Actual OPS - Career Predicted OPS')
+    plt.xlabel('Error')
+    plt.ylabel('Frequency')
+    ptile = np.percentile(dfp.career_diff,[2.5,97.5])    
+    lab = 'Career Error Mean: %1.2f' % round(np.mean(dfp.career_diff),2)
+    lab1 = 'Conf Interval 2.5 ( %1.3f' % ptile[0] + ' )'
+    lab2 = 'Conf Interval 97.5 ( %1.3f' % ptile[1] + ' )'
+    plb.axvline(round(np.mean(dfp.career_diff),2),label=lab, color='brown')
+    plb.axvline(round(ptile[0],3), label=lab1, color='red')
+    plb.axvline(round(ptile[1],3), label=lab2, color='red')
+    leg=plt.legend()
+    plt.show()
+    # plot QQ Plot to see if normal
+    probplot(dfp.career_diff,dist="norm",plot=plb)
+    _ = plt.title('QQ Plot of Average OPS Data\n',weight='bold', size=16)
+    _ = plt.ylabel('Ordered Values', labelpad=10, size=14)
+    _ = plt.xlabel('Theoritical Quantiles', labelpad=10, size = 14)
+    ax = plt.gca()
+    ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+    plt.xticks(np.arange(-4,5,1))
+    plb.show()
+    dfp = pd.merge(dfp,dfpn,on='playerID')
+    save_stats_file(path,fnc,dfp)
+    return True
+
 def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     df_results = df.loc[y_test.index, :]
     df_results['predOPS'] = y_pred
@@ -218,7 +253,9 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     df_results['OPS'] = df_results['OPS']
     df_results['error'] = df_results['error']
 #    df_results['aclass'] = acl 
-#    df_results['pclass'] = pcl 
+#    df_results['pclass'] = pcl
+    acc = df_results['error']
+    ptile = np.percentile(acc,[15,85])    
     df_out = df_results[stats_list]
     save_stats_file(path,fn, df_out)
     #  calculate Rsquared, Adj Rsquared, MSE, RMSE and Fstatistic using my routine
@@ -232,10 +269,8 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     print('Sum of Abs Pct Error: %5.1f' % AbsErrorSum)
     print('Pct Mean Error: %1.4f' % MeanOfError)
     print('Pct Std Dev Error: %1.4f' % StdOfError)
-    
-    acc = df_results['error']
-    ptile = np.percentile(acc,[2.5,95.5])
-    print('95 Pct Error Confidence Interval: ',ptile)
+
+#    print('Percent Outside Low CI %1.1f' % low_out_of_CI)
     sns.regplot(x=df_out['OPS'], y=df_out['predOPS'],
                 line_kws={"color":"r","alpha":0.7,"lw":5},
                 scatter_kws={"color":"b","s":8}
@@ -248,19 +283,29 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     plt.title('Error : Actual OPS - Predicted OPS')
     plt.xlabel('Error')
     plt.ylabel('Frequency')
-    lab = 'Sampling Mean: %1.2f' % round(np.mean(df_out.error),2)
-    lab1 = 'Conf Interval 2.5 ( %1.3f' % ptile[0] + ' )'
-    lab2 = 'Conf Interval 97.5 ( %1.3f' % ptile[1] + ' )'
+    lab = 'Error Mean: %1.2f' % round(np.mean(df_out.error),2)
+    lab1 = 'Conf Interval 15 ( %1.3f' % ptile[0] + ' )'
+    lab2 = 'Conf Interval 85 ( %1.3f' % ptile[1] + ' )'
     plb.axvline(round(np.mean(df_out.error),2),label=lab, color='brown')
     plb.axvline(round(ptile[0],3), label=lab1, color='red')
     plb.axvline(round(ptile[1],3), label=lab2, color='red')
     leg=plt.legend()
     plt.show()
+    # plot QQ Plot to see if normal
+    probplot(acc,dist="norm",plot=plb)
+    _ = plt.title('QQ Plot of OPS Data\n',weight='bold', size=16)
+    _ = plt.ylabel('Ordered Values', labelpad=10, size=14)
+    _ = plt.xlabel('Theoritical Quantiles', labelpad=10, size = 14)
+    ax = plt.gca()
+    ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+    plt.xticks(np.arange(-4,5,1))
+    plb.show()
     plt.plot(y_pred, (y_pred-y_test), marker='.',linestyle='none',color='b')
     plt.title('Predicted OPS vs. Residuals')
     plt.xlabel('Predicted OPS')
     plt.ylabel('Residuals')
     plt.show()
+    career_OPS_var(df_out,fn)
     return True
 
 def calc_ops(df):    
@@ -299,14 +344,14 @@ df = dfbatting_player_stats
 
 df = df.reset_index(drop=True)
 
-df = df[( df['OPS'] >= .5) & ( df['OPS'] <= 1.1) & (df['age'] > 22) ]
+df = df[ ( df['age'] > 22 ) ]
 #lst = [278,487,3354,861,233,380,36,107,597,369,368,370,397,524,532,495,3476,3596,4398,4891,4174,1020,3254,309,766,3655,271,1029,3581,3054,4595,4075,2572,999,530]
 #df = df.drop(lst)
 
 
 
 df = normalize_categories(df,['POS'],['POS'])
-df = normalize_values(df,['age','height','weight','lag1_AVG','lag1_cAVG','lag1_H','lag1_cH','lag1_aH','lag1_pH','lag1_AB','lag1_cAB','lag1_aAB','lag1_pAB','lag1_cHR','lag1_HR'],['nage','nheight','nweight','lag1_nAVG','lag1_ncAVG','lag1_nH','lag1_ncH','lag1_naH','lag1_npH','lag1_nAB','lag1_ncAB','lag1_naAB','lag1_npAB','lag1_ncHR','lag1_nHR'],'zeromean')
+df = normalize_values(df,['lag1_OPS','lag1_cOPS','age','height','weight','lag1_AVG','lag1_cAVG','lag1_H','lag1_cH','lag1_aH','lag1_pH','lag1_AB','lag1_cAB','lag1_aAB','lag1_pAB','lag1_cHR','lag1_HR'],['lag1_nOPS','lag1_ncOPS','nage','nheight','nweight','lag1_nAVG','lag1_ncAVG','lag1_nH','lag1_ncH','lag1_naH','lag1_npH','lag1_nAB','lag1_ncAB','lag1_naAB','lag1_npAB','lag1_ncHR','lag1_nHR'],'zeromean')
 
 df['grandOPS'] = OPS_val(df)
 
@@ -333,7 +378,7 @@ df.weight = df.weight.astype(int)
 df.height = df.height.astype(int)
 df = calc_BMI(df)
 
-feature_list =  ['age','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','lag1_OPS','lag1_cOPS','lag1_OPSavg']
+feature_list =  ['age','nheight','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','lag1_nOPS','lag1_ncOPS']
 #'lag1_nHR','lag1_AVG'
 #'lag1_nH','lag1_ncH','lag1_naH','lag1_npH','lag1_nAB','lag1_ncAB','lag1_naAB','lag1_npAB'
 #'lag1_cAVG','lag1_aAVG','lag1_pAVG'
@@ -347,12 +392,13 @@ pct = 0.20
 #X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.3, random_state=42)
 df_train, df_test = split_df(df,pct)
 X_train = df_train[feature_list]
+df_test = df_test[ (df_test['AB'] >= 200) & (df_test['OPS_AVG'] > .500) ]
 
 y_train = df_train.OPS
 X_test = df_test[feature_list]
 y_test = df_test.OPS
     
-stats_list = ['yearID','playername','OPS','predOPS','error','AB','H','AVG','HR','3B','2B','1B','POS','SLG','OBP','age','height']
+stats_list = ['yearID','playername','OPS','predOPS','error','AB','H','AVG','HR','3B','2B','1B','POS','SLG','OBP','age','height','playerID']
 
 
 #
@@ -395,26 +441,26 @@ print(r2)
 ##
 ##################################################### XGBoost ##############################################################
 #
-##print('\n')
-##print('XGBoost Regressor')
-##print('\n')
-### 'Create instance of XGBoost
-##
-##reg_xgb = xgb.XGBRegressor(objective ='reg:squarederror', 
-##                           colsample_bytree=0.6, 
-##                           learning_rate=0.2,
-##                           max_depth=4, 
-##                           n_estimators=60, 
-##                           subsamples=0.6,
-##                           alpha=1,
-##                           gamma=0.001
-##                          )
-##
-##reg_xgb.fit(X_train, y_train)
-##
-##y_pred = reg_xgb.predict(X_test)
-##
-##lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB.csv',stats_list,reg_xgb
+print('\n')
+print('XGBoost Regressor')
+print('\n')
+# 'Create instance of XGBoost
+
+reg_xgb = xgb.XGBRegressor(objective ='reg:squarederror', 
+                           colsample_bytree=0.6, 
+                           learning_rate=0.2,
+                           max_depth=4, 
+                           n_estimators=60, 
+                           subsamples=0.6,
+                           alpha=1,
+                           gamma=0.001
+                          )
+
+reg_xgb.fit(X_train, y_train)
+
+y_pred = reg_xgb.predict(X_test)
+
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB.csv',stats_list,reg_xgb)
 
 ################################################### XGBoost GridSearchCV ##################################################
 #
@@ -450,34 +496,34 @@ print(r2)
 
 
 ####################################################### Ridge ##############################################################
-#
-#print('\n')
-#print('Linear Regression - Ridge')
-#print('\n')
-#ridge = Ridge(alpha=.001, normalize=True,random_state=61)
-#ridge.fit(X_train, y_train)
-#y_pred = ridge.predict(X_test)
-#
-#lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsR.csv',stats_list,ridge)
-###
+
+print('\n')
+print('Linear Regression - Ridge')
+print('\n')
+ridge = Ridge(alpha=.001, normalize=True,random_state=61)
+ridge.fit(X_train, y_train)
+y_pred = ridge.predict(X_test)
+
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsR.csv',stats_list,ridge)
+##
 ################################################### Lasso ###################################################################
-#
-#print('\n')
-#print('Linear Regression - Lasso')
-#print('\n')
-#lasso = Lasso(alpha=0.0001,random_state=61)
-#lasso_coef = lasso.fit(X_train, y_train).coef_
-#y_pred = lasso.predict(X_test)
-#
-#lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsLassoC.csv',stats_list,lasso)
-#
-#cols = feature_list
-#plt.plot(range(len(cols)), lasso_coef)
-#plt.xticks(range(len(cols)), cols, rotation=45)
-#plt.ylabel('Coefficients')
-#plt.show()
-#
-##################################################### Random Forests #########################################################
+
+print('\n')
+print('Linear Regression - Lasso')
+print('\n')
+lasso = Lasso(alpha=0.0001,random_state=61)
+lasso_coef = lasso.fit(X_train, y_train).coef_
+y_pred = lasso.predict(X_test)
+
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsLassoC.csv',stats_list,lasso)
+
+cols = feature_list
+plt.plot(range(len(cols)), lasso_coef)
+plt.xticks(range(len(cols)), cols, rotation=45)
+plt.ylabel('Coefficients')
+plt.show()
+
+###################################################### Random Forests #########################################################
 ##
 #print('\n')
 #print('Random Forest Regressor')
@@ -504,7 +550,7 @@ print(r2)
 #lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF.csv',stats_list,gs)
 #
 #print(gs.best_params_)
-#
+
 #################################################### SVM ###################################################################
 ##
 #print('\n')
