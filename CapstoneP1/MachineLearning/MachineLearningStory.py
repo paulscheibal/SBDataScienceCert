@@ -1,19 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Nov  4 16:32:00 2019
-
-@author: User
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Oct 28 13:52:46 2019
-
-@author: User
-"""
-
-# -*- coding: utf-8 -*-
-"""
 Created on Wed Sep 18 12:31:14 2019
 
 @author: Paul Scheibal
@@ -52,6 +38,7 @@ from sklearn.svm import SVR
 from sklearn.preprocessing import PolynomialFeatures 
 from sklearn.metrics import mean_squared_error, r2_score
 from statsmodels.graphics.regressionplots import *
+from sklearn.model_selection import cross_val_score, cross_val_predict
 from scipy.stats import probplot
 import xgboost as xgb
 from xgboost import XGBRegressor
@@ -198,7 +185,7 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
 #    df_results['aclass'] = acl 
 #    df_results['pclass'] = pcl
     acc = df_results['error']
-    ptile = np.percentile(acc,[15,85])    
+    ptile = np.percentile(acc,[2.5,16,84,97.5])    
     df_out = df_results[stats_list]
     save_stats_file(path,fn, df_out)
     #  calculate Rsquared, Adj Rsquared, MSE, RMSE and Fstatistic using my routine
@@ -227,11 +214,15 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     plt.xlabel('Error',weight='bold', size=14)
     plt.ylabel('Frequency',weight='bold', size=14)
     lab = 'Error Mean: %1.2f' % round(np.mean(df_out.error),2)
-    lab1 = 'Conf Interval 15 ( %1.3f' % ptile[0] + ' )'
-    lab2 = 'Conf Interval 85 ( %1.3f' % ptile[1] + ' )'
+    lab1 = 'Conf Interval 16 ( %1.3f' % ptile[1] + ' )'
+    lab2 = 'Conf Interval 84 ( %1.3f' % ptile[2] + ' )'
+    lab3 = 'Conf Interval 2.5 ( %1.3f' % ptile[0] + ' )'
+    lab4 = 'Conf Interval 97.5 ( %1.3f' % ptile[3] + ' )'
     plb.axvline(round(np.mean(df_out.error),2),label=lab, color='brown')
-    plb.axvline(round(ptile[0],3), label=lab1, color='red')
-    plb.axvline(round(ptile[1],3), label=lab2, color='red')
+    plb.axvline(round(ptile[1],3), label=lab1, color='red')
+    plb.axvline(round(ptile[2],3), label=lab2, color='red')
+    plb.axvline(round(ptile[0],3), label=lab3, color='green')
+    plb.axvline(round(ptile[3],3), label=lab4, color='green')
     leg=plt.legend()
     plt.show()
     # plot QQ Plot to see if normal
@@ -287,62 +278,13 @@ df = dfbatting_player_stats
 
 df = df.reset_index(drop=True)
 
-
-##
-##  plot lag1_OPS vs. OPS
-##
-#
-#sns.regplot(x=df['OPS'], y=df['lag1_OPS'],
-#            line_kws={"color":"r","alpha":0.7,"lw":5},
-#            scatter_kws={"color":"b","s":8}
-#           )
-#plt.title('Actual OPS vs. Lag1 OPS',weight='bold', size=16)
-#plt.xlabel('Actual OPS',weight='bold', size=14)
-#plt.ylabel('Lag1 OPS',weight='bold', size=14)
-#plt.show()
-#
-#sns.regplot(x=df['OPS'], y=df['lag1_cOPS'],
-#            line_kws={"color":"r","alpha":0.7,"lw":5},
-#            scatter_kws={"color":"b","s":8}
-#           )
-#plt.title('Actual OPS vs. Lag1 Career OPS',weight='bold', size=16)
-#plt.xlabel('Actual OPS',weight='bold', size=14)
-#plt.ylabel('Lag1 Career OPS',weight='bold', size=14)
-#plt.show()
-#
-#dfplot = df[ (df['OPS_AVG'] >= .6501) & (df['OPS'] > 0) & (df['OPS'] < 1.5) & (df['age'] >= 18)][['OPS','age']]
-#dfplot.age = dfplot.age.round()
-#dfplot2 = df[ (df['OPS_AVG'] <= .6500) & (df['OPS_AVG'] >= .4501) &  (df['OPS'] < 1.5) & (df['OPS'] > 0) & (df['age'] >= 18)][['OPS','age']]
-#dfplot2.age = dfplot2.age.round()
-#dfplot3 = df[ (df['OPS_AVG'] <= .4500) & (df['OPS_AVG'] >= .3001) & (df['OPS'] < 1.5) & (df['OPS'] > 0) & (df['age'] >= 18)][['OPS','age']]
-#dfplot3.age = dfplot3.age.round()
-#dfplot4 = df[ (df['OPS_AVG'] <= .3000) & (df['OPS'] < 1.5) & (df['OPS'] > 0) & (df['age'] >= 18)][['OPS','age']]
-#dfplot4.age = dfplot4.age.round()
-#ax = plt.gca()
-#dfplot.plot(kind='scatter',x='age',y='OPS',color='#ff9999',alpha=1, figsize=(FSHZ,8), ax=ax, label = 'High Performers')
-#dfplot2.plot(kind='scatter',x='age',y='OPS',color='#66b3ff',alpha=0.5, ax=ax, label = 'Average Performers')
-#dfplot3.plot(kind='scatter',x='age',y='OPS',color='#99ff99',alpha=0.4, ax=ax, label = 'Below Avg Performers')
-#dfplot4.plot(kind='scatter',x='age',y='OPS',color='black',alpha=0.3, ax=ax, label = 'Poor Performers')
-## Scatter plot for players playing for 12 or more years by OPS vs Age '#ff9999','#66b3ff','#99ff99','#ffcc99'
-#ax.set_title('OPS vs. Age\nAll Position Players - Years Played 12 or more Years\n', weight='bold', size=14)
-#ax.set_xlabel("Age of Player", labelpad=10, size=14)
-#ax.set_ylabel("OPS", labelpad=10, size=14)
-#for tick in ax.get_xticklabels():
-#    tick.set_fontsize(11)
-#for tick in ax.get_yticklabels():
-#    tick.set_fontsize(11)
-#plt.yticks(np.arange(0,1.6,.1))
-#plt.xticks(np.arange(18,52,1))
-#ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
-#leg = plt.legend()
-#plt.show()
-#
-#stop
-
 df = df[ ( df['AB'] >= 300) ]
 
+df['decade'] = (df['yearID'] // 10)*10
+
 df = normalize_categories(df,['POS'],['POS'])
-df = normalize_values(df,['lag1_OPS','lag1_cOPS','age','height','weight','lag1_H','lag1_cH','lag1_HR','lag1_cHR','lag1_AB','lag1_cAB'],['lag1_nOPS','lag1_ncOPS','nage','nheight','nweight','lag1_nH','lag1_ncH','lag1_nHR','lag1_ncHR','lag1_nAB','lag1_ncAB'],'zeromean')
+df = normalize_values(df,['decade', 'lag1_OPS', 'lag1_cOPS', 'age', 'height', 'weight', 'lag1_H', 'lag1_cH', 'lag1_HR', 'lag1_cHR', 'lag1_AB', 'lag1_cAB'],
+                         ['ndecade','lag1_nOPS','lag1_ncOPS','nage','nheight','nweight','lag1_nH','lag1_ncH','lag1_nHR','lag1_ncHR','lag1_nAB','lag1_ncAB'],'zeromean')
 
 # read team mapping and create a mapping function from string to integer
 teamsf = path + 'teams_list.csv'
@@ -355,28 +297,27 @@ df.weight = df.weight.astype(int)
 df.height = df.height.astype(int)
 df = calc_BMI(df)
 
-feature_list =  ['age','nheight','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','lag1_nOPS','lag1_ncOPS','lag1_ncH','lag1_ncHR','lag1_ncAB','lag1_nHR','lag1_nH']
+feature_list =  ['ndecade','age','nheight','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','lag1_nOPS','lag1_ncOPS','lag1_ncH','lag1_ncHR','lag1_ncAB','lag1_nHR','lag1_nH']
 #'lag1_ncH','lag1_ncHR','lag1_ncAB'
 #'lag1_nH','lag1_nHR','lag1_nAB'
 
 #feature_list =  ['age','nheight','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','lag1_nOPS','lag1_ncOPS']
 
-X = df[feature_list]
-y = df.OPS
+#X = df[feature_list]
+#y = df.OPS
 pct = 0.20
 
 #X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.3, random_state=42)
 df_train, df_test = split_df(df,pct)
 X_train = df_train[feature_list]
-# ignore less than or equal to .3 OPS and great than or equal to 1.2 OPS as these are outliers
-df_test = df_test[ (df_test['OPS'] > .3) & (df_test['OPS'] < 1.2) & (df['age'] >= 22) & (df['age'] <= 37) & (df['years_played'] >= 10)]
-
 y_train = df_train.OPS
+
+# ignore less than or equal to .3 OPS and great than or equal to 1.2 OPS as these are outliers
+df_test = df_test[ (df_test['OPS'] > .3) & (df_test['OPS'] < 1.2) & (df['age'] >= 22) & (df['age'] <= 37) & (df['years_played'] >= 10) ]
 X_test = df_test[feature_list]
 y_test = df_test.OPS
     
 stats_list = ['yearID','playername','OPS','predOPS','error','AB','H','AVG','HR','3B','2B','1B','POS','SLG','OBP','age','height','playerID']
-
 
 ################################################### Lasso ###################################################################
 
@@ -403,33 +344,6 @@ plt.xlabel('Features',weight='bold', size=14)
 plt.ylabel('Coefficients',weight='bold', size=14)
 plt.show()
 
-###################################################### poly ################################################################
-
-print('\n')
-print('Linear Regression - Polynomial')
-print('\n')
-
-degree = 2
-
-poly = PolynomialFeatures(degree=degree)
-X_train_ = poly.fit_transform(X_train)
-X_test_ = poly.fit_transform(X_test)
-
-lg = LinearRegression()
-
-params = {
-            'normalize':[True,False]
-         }
-
-gs = GridSearchCV(estimator=lg,param_grid=params,cv=3,n_jobs = -1,verbose = 2)
-
-gs.fit(X_train_,y_train) 
-
-y_pred = gs.predict(X_test_)
-
-lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsPoly.csv',stats_list,gs)
-
-print(gs.best_params_)
 
 ###################################################### XGBoost ###############################################################
 ####   learning_rate: step size shrinkage used to prevent overfitting. Range is [0,1]
@@ -458,21 +372,71 @@ print('\n')
 params = {
             'colsample_bytree': [0.6],
             'learning_rate':[0.1],
-            'n_estimators': [50],
-            'max_depth':[3,4],
-            'alpha':[0.01,0.1,1],
-            'gamma':[0.001,0.01],
+            'n_estimators': [50,60],
+            'max_depth':[4,5],
+            'alpha':[0.01],
+            'gamma':[0.001],
             'subsamples':[0.6]
         }
 reg_xgb = XGBRegressor(objective = 'reg:squarederror')
 
-gs = GridSearchCV(estimator=reg_xgb,param_grid=params,cv=3,n_jobs = -1,verbose = 2)
+gs = GridSearchCV(estimator=reg_xgb,param_grid=params,cv=10,n_jobs = -1,verbose = 2)
+
+gs.fit(X_train, y_train)
+
+y_pred2 = gs.predict(X_train)
+
+v_Rsquared, v_AdjRsquared, v_MSE, v_RMSE, v_Fstatistic, v_MeanOfError, v_StdOfError, v_AbsErrorSum = calc_regression_stats(X_train,y_train,y_pred2)
+
+print('\n')
+print('Training Statistics: ')
+print('\n')
+print('R Squared (training): %1.3f' % v_Rsquared) 
+print('Adjusted R Squared (training): %1.3f'  % v_AdjRsquared) 
+print('Mean Squared Error (training): %1.3f' % v_MSE)
+print('Root Mean Squared Error (training): %1.3f' % v_RMSE)
+print('F Statistic (training): %1.3f' % v_Fstatistic)
+print('\n')
+print('\n')
+
+print('\n')
+print('Testing Statistics: ')
+print('\n')
 
 gs.fit(X_train, y_train)
 
 y_pred = gs.predict(X_test)
 
 lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB_GS.csv',stats_list,gs)
+
+print(gs.best_params_)
+
+
+###################################################### poly ################################################################
+
+print('\n')
+print('Linear Regression - Polynomial')
+print('\n')
+
+degree = 2
+
+poly = PolynomialFeatures(degree=degree)
+X_train_ = poly.fit_transform(X_train)
+X_test_ = poly.fit_transform(X_test)
+
+lg = LinearRegression()
+
+params = {
+            'normalize':[True,False]
+         }
+
+gs = GridSearchCV(estimator=lg,param_grid=params,cv=10,n_jobs = -1,verbose = 2)
+
+gs.fit(X_train_,y_train) 
+
+y_pred = gs.predict(X_test_)
+
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsPoly.csv',stats_list,gs)
 
 print(gs.best_params_)
 
@@ -488,12 +452,12 @@ params = {
 
 ridge = Ridge(normalize=True,random_state=61)
 
-gs = GridSearchCV(estimator=ridge,param_grid=params,cv=3,n_jobs = -1,verbose = 2)
+gs = GridSearchCV(estimator=ridge,param_grid=params,cv=10,n_jobs = -1,verbose = 2)
 
 gs.fit(X_train, y_train)
 y_pred = gs.predict(X_test)
 
-lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsR.csv',stats_list,gs)
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRidge.csv',stats_list,gs)
 
 print(gs.best_params_)
 
@@ -513,7 +477,7 @@ params = {
 # Create a based model
 rf = RandomForestRegressor(random_state=61,bootstrap=True)
 # Instantiate the grid search model
-gs = GridSearchCV(estimator=rf,param_grid=params,cv=3,n_jobs = -1,verbose = 2)
+gs = GridSearchCV(estimator=rf,param_grid=params,cv=10,n_jobs = -1,verbose = 2)
 
 gs.fit(X_train, y_train)
 y_pred = gs.predict(X_test)
@@ -522,7 +486,7 @@ y_pred = gs.predict(X_test)
 lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF.csv',stats_list,gs)
 
 print(gs.best_params_)
-#
+
 ##################################################### SVM ###################################################################
 
 print('\n')
@@ -536,9 +500,9 @@ params = {
 
 svm = SVR(kernel='rbf')
 
-gs = GridSearchCV(estimator=svm,param_grid=params,cv=3,n_jobs = -1,verbose = 2)
+gs = GridSearchCV(estimator=svm,param_grid=params,cv=10,n_jobs = -1,verbose = 2)
 
-gs.fit(X, y)
+gs.fit(X_train, y_train)
 y_pred = gs.predict(X_test)
 
 lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM_GS.csv',stats_list,gs)
