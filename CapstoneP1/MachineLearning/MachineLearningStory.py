@@ -35,20 +35,22 @@ import pylab as plb
 import matplotlib.mlab as mlab
 import math
 from numpy.random import seed
-from sklearn.linear_model import ElasticNet
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
+#from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
-from sklearn.model_selection import cross_val_score
+#from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
-from sklearn.metrics import classification_report
-from sklearn.model_selection import StratifiedKFold
-from sklearn.preprocessing import StandardScaler
+#from sklearn.metrics import classification_report
+#from sklearn.model_selection import StratifiedKFold
+#from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR
+#from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import PolynomialFeatures 
+from sklearn.metrics import mean_squared_error, r2_score
 from statsmodels.graphics.regressionplots import *
 from scipy.stats import probplot
 import xgboost as xgb
@@ -60,6 +62,8 @@ from IPython.core.pylabtools import figsize
 import random
 import warnings
 warnings.filterwarnings("ignore")
+
+seed(61)
 
 figsize(12,10)
 
@@ -86,67 +90,6 @@ def classify_OPS(opslst,pc,pcn):
                opscls_lst.append(opscls)
                break
     return opscls_lst
-
-def OPS_samples(ind):
-    return np.random.choice(ind, len(ind))
-    
-def bootstrap_replicate_OPS(df,n):
-    ind = OPS_samples(df.index,n)
-    df = df.loc[ind,:]
-    return df
-
-def add_replicates_OPS(df,dfsub,numofreplsub):
-    dfoversample = pd.DataFrame()
-    for i in range(0,numofreplsub):
-        dfreplind = OPS_samples(dfsub.index)
-        dfrepl = dfsub.loc[dfreplind,:]
-        dfoversample = pd.concat([dfoversample,dfrepl],ignore_index=True, sort=False)
-    dfoversample['datatype'] = 'Replicates'
-    df['datatype'] = 'Actuals'
-    df = pd.concat([df,dfoversample],ignore_index=True, sort=False)
-    df = df.reset_index(drop=True)
-    return df
-
-def calc_r_fit(x,y,coef):
-    coeflist =  coef.tolist()
-    correlation = np.corrcoef(x, y)[0,1]
-    # r-squared
-    rsquared = correlation ** 2
-    return correlation, rsquared
-
-def calc_poly(x_data,y_data,type):
-    coef= np.polyfit(x_data, y_data, type)
-    polynomial = np.poly1d(coef)
-    x = np.arange(min(x_data),max(x_data) + 1,1)
-    y = polynomial(x)
-    return polynomial,coef,x,y
-
-def poly_fit(f,x,y):
-    return np.sum((f(x) - y) ** 2)
-
-def plot_poly(xarr,yarr,d,c,w):
-    fcnarr = []
-    for i in range(0,len(d)):
-        type = d[i]
-        poly, coef, x, y = calc_poly(xarr, yarr, type)
-        fcnarr.append(poly)
-        plt.plot(x,y,label= 'Polynomial Fit Degree %1.f' % type, linewidth=w,color=c[i])
-    return fcnarr
-
-def plot_poly_r2(xarr,yarr,d,c,w):
-    fcnlst = []
-    corrlst = []
-    rsqlst = []
-    for i in range(0,len(d)):
-        type = d[i]
-        poly, coef, x, y = calc_poly(xarr, yarr, type)
-        fcnlst.append(poly)
-        corr, rsq = calc_r_fit(x,y,coef)
-        corrlst.append(corr)
-        rsqlst.append(rsq)
-        plt.plot(x,y,label= 'Polynomial Fit Degree %1.f' % type, linewidth=w,color=c[i])
-    
-    return fcnlst, corrlst, rsqlst
 
 def save_stats_file(path, fn, df):
     stf = path + fn
@@ -218,9 +161,9 @@ def career_OPS_var(df,fn):
     dfp = dfp[dfp['career_diff'] > -20]
     fnc = 'Career_' + fn
     plt.hist(dfp.career_diff,bins=25)
-    plt.title('Error : Career Actual OPS - Career Predicted OPS')
-    plt.xlabel('Error')
-    plt.ylabel('Frequency')
+    plt.title('Error : Career Actual OPS - Career Predicted OPS',weight='bold', size=16)
+    plt.xlabel('Error',weight='bold', size=14)
+    plt.ylabel('Frequency',weight='bold', size=14)
     ptile = np.percentile(dfp.career_diff,[2.5,97.5])    
     lab = 'Career Error Mean: %1.2f' % round(np.mean(dfp.career_diff),2)
     lab1 = 'Conf Interval 2.5 ( %1.3f' % ptile[0] + ' )'
@@ -275,14 +218,14 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
                 line_kws={"color":"r","alpha":0.7,"lw":5},
                 scatter_kws={"color":"b","s":8}
                )
-    plt.title('Actual OPS vs. Predicted OPS')
-    plt.xlabel('Actual OPS')
-    plt.ylabel('Predicted OPS')
+    plt.title('Actual OPS vs. Predicted OPS',weight='bold', size=16)
+    plt.xlabel('Actual OPS',weight='bold', size=14)
+    plt.ylabel('Predicted OPS',weight='bold', size=14)
     plt.show()
     plt.hist(acc,bins=25)
-    plt.title('Error : Actual OPS - Predicted OPS')
-    plt.xlabel('Error')
-    plt.ylabel('Frequency')
+    plt.title('Error : Actual OPS - Predicted OPS',weight='bold', size=16)
+    plt.xlabel('Error',weight='bold', size=14)
+    plt.ylabel('Frequency',weight='bold', size=14)
     lab = 'Error Mean: %1.2f' % round(np.mean(df_out.error),2)
     lab1 = 'Conf Interval 15 ( %1.3f' % ptile[0] + ' )'
     lab2 = 'Conf Interval 85 ( %1.3f' % ptile[1] + ' )'
@@ -301,9 +244,9 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     plt.xticks(np.arange(-4,5,1))
     plb.show()
     plt.plot(y_pred, (y_pred-y_test), marker='.',linestyle='none',color='b')
-    plt.title('Predicted OPS vs. Residuals')
-    plt.xlabel('Predicted OPS')
-    plt.ylabel('Residuals')
+    plt.title('Predicted OPS vs. Residuals',weight='bold', size=16)
+    plt.xlabel('Predicted OPS',weight='bold', size=14)
+    plt.ylabel('Residuals',weight='bold', size=14)
     plt.show()
     career_OPS_var(df_out,fn)
     return True
@@ -335,7 +278,7 @@ def calc_BMI(df):
 # set path for reading Lahman baseball statistics
 path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
 
-battingf = path + 'dfbatting_player_stats_full.csv'
+battingf = path + 'dfbatting_player_allstats.csv'
 dfbatting_player_stats = pd.read_csv(battingf,parse_dates=['debut','finalGame','birthdate'])
 
 dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut'] >= START_DATE) &
@@ -344,23 +287,62 @@ df = dfbatting_player_stats
 
 df = df.reset_index(drop=True)
 
-df = df[ ( df['age'] > 22 ) ]
-#lst = [278,487,3354,861,233,380,36,107,597,369,368,370,397,524,532,495,3476,3596,4398,4891,4174,1020,3254,309,766,3655,271,1029,3581,3054,4595,4075,2572,999,530]
-#df = df.drop(lst)
 
+##
+##  plot lag1_OPS vs. OPS
+##
+#
+#sns.regplot(x=df['OPS'], y=df['lag1_OPS'],
+#            line_kws={"color":"r","alpha":0.7,"lw":5},
+#            scatter_kws={"color":"b","s":8}
+#           )
+#plt.title('Actual OPS vs. Lag1 OPS',weight='bold', size=16)
+#plt.xlabel('Actual OPS',weight='bold', size=14)
+#plt.ylabel('Lag1 OPS',weight='bold', size=14)
+#plt.show()
+#
+#sns.regplot(x=df['OPS'], y=df['lag1_cOPS'],
+#            line_kws={"color":"r","alpha":0.7,"lw":5},
+#            scatter_kws={"color":"b","s":8}
+#           )
+#plt.title('Actual OPS vs. Lag1 Career OPS',weight='bold', size=16)
+#plt.xlabel('Actual OPS',weight='bold', size=14)
+#plt.ylabel('Lag1 Career OPS',weight='bold', size=14)
+#plt.show()
+#
+#dfplot = df[ (df['OPS_AVG'] >= .6501) & (df['OPS'] > 0) & (df['OPS'] < 1.5) & (df['age'] >= 18)][['OPS','age']]
+#dfplot.age = dfplot.age.round()
+#dfplot2 = df[ (df['OPS_AVG'] <= .6500) & (df['OPS_AVG'] >= .4501) &  (df['OPS'] < 1.5) & (df['OPS'] > 0) & (df['age'] >= 18)][['OPS','age']]
+#dfplot2.age = dfplot2.age.round()
+#dfplot3 = df[ (df['OPS_AVG'] <= .4500) & (df['OPS_AVG'] >= .3001) & (df['OPS'] < 1.5) & (df['OPS'] > 0) & (df['age'] >= 18)][['OPS','age']]
+#dfplot3.age = dfplot3.age.round()
+#dfplot4 = df[ (df['OPS_AVG'] <= .3000) & (df['OPS'] < 1.5) & (df['OPS'] > 0) & (df['age'] >= 18)][['OPS','age']]
+#dfplot4.age = dfplot4.age.round()
+#ax = plt.gca()
+#dfplot.plot(kind='scatter',x='age',y='OPS',color='#ff9999',alpha=1, figsize=(FSHZ,8), ax=ax, label = 'High Performers')
+#dfplot2.plot(kind='scatter',x='age',y='OPS',color='#66b3ff',alpha=0.5, ax=ax, label = 'Average Performers')
+#dfplot3.plot(kind='scatter',x='age',y='OPS',color='#99ff99',alpha=0.4, ax=ax, label = 'Below Avg Performers')
+#dfplot4.plot(kind='scatter',x='age',y='OPS',color='black',alpha=0.3, ax=ax, label = 'Poor Performers')
+## Scatter plot for players playing for 12 or more years by OPS vs Age '#ff9999','#66b3ff','#99ff99','#ffcc99'
+#ax.set_title('OPS vs. Age\nAll Position Players - Years Played 12 or more Years\n', weight='bold', size=14)
+#ax.set_xlabel("Age of Player", labelpad=10, size=14)
+#ax.set_ylabel("OPS", labelpad=10, size=14)
+#for tick in ax.get_xticklabels():
+#    tick.set_fontsize(11)
+#for tick in ax.get_yticklabels():
+#    tick.set_fontsize(11)
+#plt.yticks(np.arange(0,1.6,.1))
+#plt.xticks(np.arange(18,52,1))
+#ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
+#leg = plt.legend()
+#plt.show()
+#
+#stop
 
+df = df[ ( df['AB'] >= 300) ]
 
 df = normalize_categories(df,['POS'],['POS'])
-df = normalize_values(df,['lag1_OPS','lag1_cOPS','age','height','weight','lag1_AVG','lag1_cAVG','lag1_H','lag1_cH','lag1_aH','lag1_pH','lag1_AB','lag1_cAB','lag1_aAB','lag1_pAB','lag1_cHR','lag1_HR'],['lag1_nOPS','lag1_ncOPS','nage','nheight','nweight','lag1_nAVG','lag1_ncAVG','lag1_nH','lag1_ncH','lag1_naH','lag1_npH','lag1_nAB','lag1_ncAB','lag1_naAB','lag1_npAB','lag1_ncHR','lag1_nHR'],'zeromean')
-
-df['grandOPS'] = OPS_val(df)
-
-df['lag1_OPSavg'] = df['lag1_OPS']*.3 + df['lag1_cOPS']*.7
-df['lag1_cOPSdiff'] = (df['lag1_cOPS'] - df['lag1_OPS']) / df['lag1_cOPS']
-df['lag1_pOPSdiff'] = (df['lag1_cOPS'] - df['lag1_pOPS']) / df['lag1_cOPS']
-df['lag1_aOPSdiff'] = (df['lag1_cOPS'] - df['lag1_aOPS']) / df['lag1_cOPS']
-df['lag1_aOPSvar'] = -df['lag1_aOPSvar'] 
-df['lag1_pOPSvar'] = -df['lag1_pOPSvar'] 
+df = normalize_values(df,['lag1_OPS','lag1_cOPS','age','height','weight','lag1_H','lag1_cH','lag1_HR','lag1_cHR','lag1_AB','lag1_cAB'],['lag1_nOPS','lag1_ncOPS','nage','nheight','nweight','lag1_nH','lag1_ncH','lag1_nHR','lag1_ncHR','lag1_nAB','lag1_ncAB'],'zeromean')
 
 # read team mapping and create a mapping function from string to integer
 teamsf = path + 'teams_list.csv'
@@ -368,22 +350,16 @@ dfteams = pd.read_csv(teamsf)
 teams_map = pd.Series(dfteams.index,index=dfteams.teamID).to_dict()
 df.teamID = df.teamID.map(teams_map)
 
-#df['yearnum'] = df.yearID - df.debut.dt.year + 1
-#perf_classes(df,1.2,.9000,.8334,.7667,.7000,.6000,5000)
-#pc = [10,1.2,1.,.9000,.8334,.7667,0]
-#df = perf_classes(df,pc)
-
 # translate weight and height datatypes to int
 df.weight = df.weight.astype(int)
 df.height = df.height.astype(int)
 df = calc_BMI(df)
 
-feature_list =  ['age','nheight','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','lag1_nOPS','lag1_ncOPS']
-#'lag1_nHR','lag1_AVG'
-#'lag1_nH','lag1_ncH','lag1_naH','lag1_npH','lag1_nAB','lag1_ncAB','lag1_naAB','lag1_npAB'
-#'lag1_cAVG','lag1_aAVG','lag1_pAVG'
-#'POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','POS_1B'
-# ['age','nheight','nweight','lag1_OPS','lag1_cOPS','lag1_nHR','lag1_ncH']
+feature_list =  ['age','nheight','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','lag1_nOPS','lag1_ncOPS','lag1_ncH','lag1_ncHR','lag1_ncAB','lag1_nHR','lag1_nH']
+#'lag1_ncH','lag1_ncHR','lag1_ncAB'
+#'lag1_nH','lag1_nHR','lag1_nAB'
+
+#feature_list =  ['age','nheight','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','lag1_nOPS','lag1_ncOPS']
 
 X = df[feature_list]
 y = df.OPS
@@ -392,7 +368,8 @@ pct = 0.20
 #X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.3, random_state=42)
 df_train, df_test = split_df(df,pct)
 X_train = df_train[feature_list]
-df_test = df_test[ (df_test['AB'] >= 200) & (df_test['OPS_AVG'] > .500) ]
+# ignore less than or equal to .3 OPS and great than or equal to 1.2 OPS as these are outliers
+df_test = df_test[ (df_test['OPS'] > .3) & (df_test['OPS'] < 1.2) & (df['age'] >= 22) & (df['age'] <= 37) & (df['years_played'] >= 10)]
 
 y_train = df_train.OPS
 X_test = df_test[feature_list]
@@ -401,98 +378,103 @@ y_test = df_test.OPS
 stats_list = ['yearID','playername','OPS','predOPS','error','AB','H','AVG','HR','3B','2B','1B','POS','SLG','OBP','age','height','playerID']
 
 
-#
-##################################################### poly ################################################################
+################################################### Lasso ###################################################################
 
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import PolynomialFeatures 
-from sklearn.metrics import mean_squared_error, r2_score
+print('\n')
+print('Linear Regression - Lasso')
+print('\n')
+
+#
+#  just want features and which ones provide value
+#
+lasso = Lasso(alpha=0.001, random_state=61)
+
+lasso_coef = lasso.fit(X_train, y_train).coef_
+
+#y_pred = lasso.predict(X_test)
+
+#lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsR.csv',stats_list,lasso)
+
+cols = feature_list
+plt.plot(range(len(cols)), lasso_coef)
+plt.xticks(range(len(cols)), cols, rotation=45)
+plt.title('Feature Value Plot',weight='bold', size=16 )
+plt.xlabel('Features',weight='bold', size=14)
+plt.ylabel('Coefficients',weight='bold', size=14)
+plt.show()
+
+###################################################### poly ################################################################
 
 print('\n')
 print('Linear Regression - Polynomial')
 print('\n')
 
 degree = 2
-model = make_pipeline(PolynomialFeatures(degree), LinearRegression())
-model.fit(X_train,y_train) 
-y_pred = model.predict(X_test)
-lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsPoly.csv',stats_list,model)
-r2 = r2_score(y_test,y_pred)
-print(r2)
 
-##
-##################################################### XGBoost ###############################################################
-###   learning_rate: step size shrinkage used to prevent overfitting. Range is [0,1]
-###   max_depth: determines how deeply each tree is allowed to grow during any boosting round.
-###   subsample: percentage of samples used per tree. Low value can lead to underfitting.
-###   colsample_bytree: percentage of features used per tree. High value can lead to overfitting.
-###   n_estimators: number of trees you want to build.
-###   objective: determines the loss function to be used like reg:linear for regression problems, 
-###              reg:logistic for classification problems with only decision, binary:logistic for 
-###              classification problems with probability.
-##
-###   XGBoost also supports regularization parameters to penalize models as they become more complex and reduce them to simple (
-###   parsimonious) models.
+poly = PolynomialFeatures(degree=degree)
+X_train_ = poly.fit_transform(X_train)
+X_test_ = poly.fit_transform(X_test)
+
+lg = LinearRegression()
+
+params = {
+            'normalize':[True,False]
+         }
+
+gs = GridSearchCV(estimator=lg,param_grid=params,cv=3,n_jobs = -1,verbose = 2)
+
+gs.fit(X_train_,y_train) 
+
+y_pred = gs.predict(X_test_)
+
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsPoly.csv',stats_list,gs)
+
+print(gs.best_params_)
+
+###################################################### XGBoost ###############################################################
+####   learning_rate: step size shrinkage used to prevent overfitting. Range is [0,1]
+####   max_depth: determines how deeply each tree is allowed to grow during any boosting round.
+####   subsample: percentage of samples used per tree. Low value can lead to underfitting.
+####   colsample_bytree: percentage of features used per tree. High value can lead to overfitting.
+####   n_estimators: number of trees you want to build.
+####   objective: determines the loss function to be used like reg:linear for regression problems, 
+####              reg:logistic for classification problems with only decision, binary:logistic for 
+####              classification problems with probability.
 ###
-###   gamma: controls whether a given node will split based on the expected reduction in loss after the split. 
-###          A higher value leads to fewer splits. Supported only for tree-based learners.
-###   alpha: L1 regularization on leaf weights. A large value leads to more regularization.
-###          lambda: L2 regularization on leaf weights and is smoother than L1 regularization.
+####   XGBoost also supports regularization parameters to penalize models as they become more complex and reduce them to simple (
+####   parsimonious) models.
+####
+####   gamma: controls whether a given node will split based on the expected reduction in loss after the split. 
+####          A higher value leads to fewer splits. Supported only for tree-based learners.
+####   alpha: L1 regularization on leaf weights. A large value leads to more regularization.
+####   lambda: L2 regularization on leaf weights and is smoother than L1 regularization.
 ##
 ##################################################### XGBoost ##############################################################
 #
+
 print('\n')
-print('XGBoost Regressor')
+print('XGBoost GridSearchCV')
 print('\n')
-# 'Create instance of XGBoost
+params = {
+            'colsample_bytree': [0.6],
+            'learning_rate':[0.1],
+            'n_estimators': [50],
+            'max_depth':[3,4],
+            'alpha':[0.01,0.1,1],
+            'gamma':[0.001,0.01],
+            'subsamples':[0.6]
+        }
+reg_xgb = XGBRegressor(objective = 'reg:squarederror')
 
-reg_xgb = xgb.XGBRegressor(objective ='reg:squarederror', 
-                           colsample_bytree=0.6, 
-                           learning_rate=0.2,
-                           max_depth=4, 
-                           n_estimators=60, 
-                           subsamples=0.6,
-                           alpha=1,
-                           gamma=0.001
-                          )
+gs = GridSearchCV(estimator=reg_xgb,param_grid=params,cv=3,n_jobs = -1,verbose = 2)
 
-reg_xgb.fit(X_train, y_train)
+gs.fit(X_train, y_train)
 
-y_pred = reg_xgb.predict(X_test)
+y_pred = gs.predict(X_test)
 
-lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB.csv',stats_list,reg_xgb)
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB_GS.csv',stats_list,gs)
 
-################################################### XGBoost GridSearchCV ##################################################
-#
-#print('\n')
-#print('XGBoost GridSearchCV')
-#print('\n')
-#params = {
-#        'colsample_bytree': [0.6],
-#        'learning_rate':[0.1],
-#        'n_estimators': [50],
-#        'max_depth':[3],
-#        'alpha':[1],
-#        'gamma':[0.001],
-#        'subsamples':[0.6]
-#        }
-#reg_xgb = XGBRegressor(objective = 'reg:squarederror')
-#
-#gs = GridSearchCV(estimator=reg_xgb, 
-#                  param_grid=params, 
-#                  cv=3,
-#                  n_jobs=-1, 
-#                  verbose=2
-#                 )
-#
-#gs.fit(X_train, y_train)
-#
-#y_pred = gs.predict(X_test)
-#
-#lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB_GS.csv',stats_list,gs)
-#print(gs.best_params_)
-#print(gs.best_score_)
-#print(np.sqrt(np.abs(gs.best_score_)))
+print(gs.best_params_)
 
 
 ####################################################### Ridge ##############################################################
@@ -500,84 +482,75 @@ lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB.csv',stats_list,reg_x
 print('\n')
 print('Linear Regression - Ridge')
 print('\n')
-ridge = Ridge(alpha=.001, normalize=True,random_state=61)
-ridge.fit(X_train, y_train)
-y_pred = ridge.predict(X_test)
+params = {
+            'alpha':[0.0001,0.001,0.01,0.1,1]
+        }
 
-lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsR.csv',stats_list,ridge)
-##
-################################################### Lasso ###################################################################
+ridge = Ridge(normalize=True,random_state=61)
 
-print('\n')
-print('Linear Regression - Lasso')
-print('\n')
-lasso = Lasso(alpha=0.0001,random_state=61)
-lasso_coef = lasso.fit(X_train, y_train).coef_
-y_pred = lasso.predict(X_test)
+gs = GridSearchCV(estimator=ridge,param_grid=params,cv=3,n_jobs = -1,verbose = 2)
 
-lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsLassoC.csv',stats_list,lasso)
+gs.fit(X_train, y_train)
+y_pred = gs.predict(X_test)
 
-cols = feature_list
-plt.plot(range(len(cols)), lasso_coef)
-plt.xticks(range(len(cols)), cols, rotation=45)
-plt.ylabel('Coefficients')
-plt.show()
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsR.csv',stats_list,gs)
+
+print(gs.best_params_)
 
 ###################################################### Random Forests #########################################################
-##
-#print('\n')
-#print('Random Forest Regressor')
-#print('\n')
-## Create the parameter grid based on the results of random search 
-#param_grid = {
-#    'bootstrap': [True],
-#    'max_depth': [300],
-#    'max_features': [2],
-#    'min_samples_leaf': [5],
-#    'min_samples_split': [12],
-#    'n_estimators': [1000]
-#}
-## Create a based model
-#rf = RandomForestRegressor(random_state=61)
-## Instantiate the grid search model
-#gs = GridSearchCV(estimator = rf, param_grid = param_grid, 
-#                          cv = 3, n_jobs = -1, verbose = 2)
-#
-#gs.fit(X_train, y_train)
-#y_pred = gs.predict(X_test)
-#
-#
-#lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF.csv',stats_list,gs)
-#
-#print(gs.best_params_)
 
-#################################################### SVM ###################################################################
-##
-#print('\n')
-#print('SVM with GridSearchCV')
-#print('\n')
+print('\n')
+print('Random Forest Regressor')
+print('\n')
+# Create the parameter grid based on the results of random search 
+params = {
+    'max_depth': [300,400],
+    'max_features': [2,3],
+    'min_samples_leaf': [5],
+    'min_samples_split': [12],
+    'n_estimators': [1000,1500]
+}
+# Create a based model
+rf = RandomForestRegressor(random_state=61,bootstrap=True)
+# Instantiate the grid search model
+gs = GridSearchCV(estimator=rf,param_grid=params,cv=3,n_jobs = -1,verbose = 2)
+
+gs.fit(X_train, y_train)
+y_pred = gs.predict(X_test)
+
+
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF.csv',stats_list,gs)
+
+print(gs.best_params_)
 #
-#params = {
-#    'C': [0.1,1,10],
-#    'gamma': [0.001, 0.01, 0.1, 1]
-#}
-#
-#svm_reg1 = SVR(kernel='rbf')
-#
-#gssvm = GridSearchCV(svm_reg1, param_grid=params, cv=3)
-#
-#gssvm.fit(X, y)
-#y_pred = gssvm.predict(X_test)
-#
-#lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM_GS.csv',stats_list,gssvm)
-#print(gssvm.best_params_)
-#
+##################################################### SVM ###################################################################
+
+print('\n')
+print('SVM with GridSearchCV')
+print('\n')
+
+params = {
+    'C': [0.1,1],
+    'gamma': [0.001, 0.01, 0.1]
+}
+
+svm = SVR(kernel='rbf')
+
+gs = GridSearchCV(estimator=svm,param_grid=params,cv=3,n_jobs = -1,verbose = 2)
+
+gs.fit(X, y)
+y_pred = gs.predict(X_test)
+
+lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM_GS.csv',stats_list,gs)
+
+print(gs.best_params_)
+
 ################################################## ols ###################################################################
-#
-#print('\n')
-#print('ols')
-#print('\n')
-#m = ols('OPS ~ age + grandOPS + lag1_OPS + lag1_cOPS',df).fit()
-#print(m.summary())
-#plot_leverage_resid2(m)
-#plt.show()
+
+print('\n')
+print('ols')
+print('\n')
+m = ols('OPS ~ age + nheight + POS_1B + POS_2B + POS_3B + POS_SS + POS_OF + lag1_nOPS + lag1_ncOPS + lag1_nH + lag1_ncH + lag1_nHR + lag1_ncHR + lag1_nAB + lag1_ncAB',df).fit()
+print(m.summary())
+plot_leverage_resid2(m)
+plt.show()
