@@ -4,9 +4,22 @@ Created on Wed Sep 18 12:31:14 2019
 
 @author: Paul Scheibal
 #
-#  This program runs a set of statistical tests both statistical and visual
-#  in or to better understand the baseball batting data from 1954 to 2018
-#  I am mainly interested in OPS data
+#  This program runs a series of regression machine learning algorithms using the 
+#  predictive model for baseball player performance prediction.  The models used are from 
+#  sklearn machine learning library and are
+#
+#           Non-Linear Regression
+#           Ridge Regression
+#           XGBoost
+#           Random Forests 
+#           SVM
+#           Lasso for viewing features and redundencies
+#
+#  There are two parts to the program.  One is the execution of all six algorithms against
+#  the model in sequence.  The second part is a comparison of the regression to the mean (rtm)
+#  features and the non-rtm features to see if rtm made a postive difference.  Only XGBoost and 
+#  Ridge Regression were used for this part of the excersize.  
+#  
 #
 """
 
@@ -21,14 +34,11 @@ import pylab as plb
 import matplotlib.mlab as mlab
 import math
 from numpy.random import seed
-from sklearn.linear_model import ElasticNet
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
-from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
 from sklearn.svm import SVR
@@ -36,18 +46,15 @@ from statsmodels.graphics.regressionplots import *
 from scipy.stats import probplot
 import xgboost as xgb
 from xgboost import XGBRegressor
-import statsmodels.api as sm
-from statsmodels.formula.api import ols
 import seaborn as sns
 from IPython.core.pylabtools import figsize
 import random
 import warnings
 warnings.filterwarnings("ignore")
 
-figsize(12,10)
+figsize(14,10)
 #sns.set(rc={'axes.facecolor':'white', 'figure.facecolor':'white'})
 sns.set_style('white') 
-
 
 # standard global constants
 MIN_AT_BATS = 0
@@ -70,7 +77,7 @@ def split_players(df,pct):
     players = np.array(df.playerID.drop_duplicates())
     plen = len(players)
     indlst = random.sample(range(0,plen), round(pct*plen))
-    print('playerlen hold back ' + str(round(plen*pct)))
+    print('Number of Testing Players ' + str(round(plen*pct)))
     test_players = np.array(players[indlst])
     train_players = np.setdiff1d(players,test_players)
     return train_players, test_players
@@ -123,6 +130,12 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     df_results = df.loc[y_test.index, :]
     df_results['predOPS'] = y_pred
     df_results['error'] = 100 * ( ( df_results['OPS'] - df_results['predOPS'] ) / df_results['OPS'])
+    # any error outside 3 std dev, get rid of as outliers
+    dfidx = df_results[ ( df_results['error'] <= -30 ) | ( df_results['error'] >= 30 ) ].index
+    df_results = df_results.drop(dfidx)
+    X_test = X_test.drop(dfidx)
+    y_test = df_results.OPS
+    y_pred = df_results.predOPS
     df_results['abserror'] = np.abs(100 * ( ( df_results['OPS'] - df_results['predOPS'] ) / df_results['OPS']))
     #
     df_results['predOPS'] = df_results['predOPS']
@@ -143,7 +156,9 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     print('Pct Mean Error: %1.4f' % MeanOfError)
     print('Pct Std Dev Error: %1.4f' % StdOfError)
     # print plots
-    acc = df_results[(df_results['error'] >= -30) & (df_results['error'] <= 30)]['error']
+    fig, ax = plt.subplots()
+    ax.grid()
+    acc = df_results.error
     ptile = np.percentile(acc,[15,85,2.5,97.5])
     sns.regplot(x=df_out['OPS'], y=df_out['predOPS'],
                 line_kws={"color":"r","alpha":0.7,"lw":5},
@@ -153,6 +168,8 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     plt.xlabel('Actual OPS')
     plt.ylabel('Predicted OPS')
     plt.show()
+    fig, ax = plt.subplots()
+    ax.grid()
     plt.hist(acc,bins=25)
     plt.title('Error : Actual OPS - Predicted OPS')
     plt.xlabel('Error')
@@ -169,6 +186,8 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     plb.axvline(round(ptile[3],3), label=lab4, color='green')
     leg=plt.legend()
     plt.show()
+    fig, ax = plt.subplots()
+    ax.grid()
     # plot QQ Plot to see if normal
     probplot(acc,dist="norm",plot=plb)
     _ = plt.title('QQ Plot of OPS Data\n',weight='bold', size=16)
@@ -178,6 +197,8 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     ax.yaxis.set_major_formatter(mtick.StrMethodFormatter('{x:1.3f}'))
     plt.xticks(np.arange(-4,5,1))
     plb.show()
+    fig, ax = plt.subplots()
+    ax.grid()
     plt.plot(y_pred, (y_pred-y_test), marker='.',linestyle='none',color='b')
     plt.title('Predicted OPS vs. Residuals')
     plt.xlabel('Predicted OPS')
@@ -204,6 +225,8 @@ def machine_learning_runs(df_train, df_test ,feature_list, stats_list,txt,fileen
     lasso = Lasso(alpha=0.001, random_state=61)    
     lasso_coef = lasso.fit(X_train, y_train).coef_    
     cols = feature_list
+    fig, ax = plt.subplots()
+    ax.grid()
     plt.plot(range(len(cols)), lasso_coef)
     plt.xticks(range(len(cols)), cols, rotation=45)
     plt.title('Feature Value Plot',weight='bold', size=16 )
@@ -307,6 +330,8 @@ def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
     #
     #  just want features and which ones provide value
     #
+    fig, ax = plt.subplots()
+    ax.grid()
     lasso = Lasso(alpha=0.001, random_state=61)    
     lasso_coef = lasso.fit(X_train, y_train).coef_    
     cols = feature_list
@@ -376,7 +401,7 @@ def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
     print('Testing Statistics: ')
     print('\n')
     y_pred = gs.predict(X_test)   
-    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRidge.csv',stats_list,ridge)
+    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRidge_GS.csv',stats_list,ridge)
     print(gs.best_params_)
     ###################################################### Random Forests #########################################################   
     print('\n')
@@ -412,7 +437,7 @@ def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
     print('\n')
     y_pred = gs.predict(X_test)  
     
-    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF.csv',stats_list,gs)
+    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF_GS.csv',stats_list,gs)
     
     print(gs.best_params_)    
     #################################################### SVM ###################################################################    
@@ -480,7 +505,7 @@ def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
 
 # set path for reading Lahman baseball statistics and read data from rttm dataset
 path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
-#battingf = path + 'dfbatting_player_stats_rttm.csv'
+
 battingf = path + 'dfbatting_player_stats_rttm_OPS_20.csv'
 dfbatting_player_stats = pd.read_csv(battingf,parse_dates=['debut','finalGame','birthdate'])
 
@@ -520,13 +545,15 @@ pct = 0.20
 df_train, df_test = split_df(df,pct)
 
 print('Number of Training Records:',len(df_train))
-df_test = df_test[ (df_test['OPS'] > .3) & (df_test['OPS'] < 1.2) & (df['AB'] >= 300) & (df['age'] >= 20) & (df['age'] <= 37) & (df['years_played'] >= 10) ]
+df_test = df_test[ (df_test['OPS'] > .3) & (df_test['OPS'] < 1.2) & (df['AB'] >= 300) & (df['age'] >= 20) & (df['age'] <= 37)  ]
 print('Number of Testing Records:',len(df_test))
 # list of columns to output to file once run is completed.    
-stats_list = ['yearID','playername','OPS','predOPS','error','AB','H','AVG','HR','3B','2B','1B','POS','age','height','lag1_rtm_OPS']
-feature_list = ['nyears_played','lag1_ncHR','lag1_nHR','nage','nheight','ndecade','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','lag1_nSLG','lag1_ncSLG','lag1_nOBP','lag1_ncOBP','lag1_nOPS','lag1_ncOPS']
-feature_list_rttm = ['nyears_played','lag1_rtm_ncHR','lag1_rtm_nHR','nage','nheight','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','ndecade','lag1_rtm_nSLG','lag1_rtm_ncSLG','lag1_rtm_nOBP','lag1_rtm_ncOBP','lag1_rtm_nOPS','lag1_rtm_ncOPS']
-ml_comparison = True
+stats_list = ['yearID','playerID','playername','OPS','predOPS','error','AB','H','AVG','HR','3B','2B','1B','POS','age','height','lag1_rtm_OPS']
+feature_list = ['lag1_ncHR','lag1_nHR','nage','nheight','ndecade','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','lag1_nSLG','lag1_ncSLG','lag1_nOBP','lag1_ncOBP','lag1_nOPS','lag1_ncOPS']
+
+feature_list_rttm = ['lag1_rtm_ncHR','lag1_rtm_nHR','nage','nheight','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','ndecade','lag1_rtm_nSLG','lag1_rtm_ncSLG','lag1_rtm_nOBP','lag1_rtm_ncOBP','lag1_rtm_nOPS','lag1_rtm_ncOPS']
+
+ml_comparison = False
 if ml_comparison == True :
     # make run with out regression to the mean lag statistics  
     machine_learning_runs(df_train, df_test ,feature_list, stats_list,'With Out RTTM','_woRTM.csv')
