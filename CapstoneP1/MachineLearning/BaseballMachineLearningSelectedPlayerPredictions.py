@@ -15,11 +15,7 @@ Created on Wed Sep 18 12:31:14 2019
 #           SVM
 #           Lasso for viewing features and redundencies
 #
-#  There are two parts to the program.  One is the execution of all six algorithms against
-#  the model in sequence.  The second part is a comparison of the regression to the mean (rtm)
-#  features and the non-rtm features to see if rtm made a postive difference.  Only XGBoost and 
-#  Ridge Regression were used for this part of the excersize.  
-#  
+#  This version runs testing for select players  
 #
 """
 
@@ -367,7 +363,7 @@ def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
     print('Testing Statistics: ')
     print('\n')
     y_pred = gs.predict(X_test)
-    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB_GS.csv',stats_list,gs) 
+    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB_GS_select.csv',stats_list,gs) 
     print(gs.best_params_)
     ####################################################### Ridge ##############################################################
     print('\n')
@@ -395,7 +391,7 @@ def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
     print('Testing Statistics: ')
     print('\n')
     y_pred = gs.predict(X_test)   
-    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRidge_GS.csv',stats_list,ridge)
+    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRidge_GS_select.csv',stats_list,ridge)
     print(gs.best_params_)
     ###################################################### Random Forests #########################################################   
     print('\n')
@@ -431,7 +427,7 @@ def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
     print('\n')
     y_pred = gs.predict(X_test)  
     
-    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF_GS.csv',stats_list,gs)
+    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF_GS_select.csv',stats_list,gs)
     
     print(gs.best_params_)    
     #################################################### SVM ###################################################################    
@@ -465,7 +461,7 @@ def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
     print('\n')
     y_pred = gs.predict(X_test)
     
-    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM_GS.csv',stats_list,gs)
+    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM_GS_select.csv',stats_list,gs)
     
     print(gs.best_params_)
     ###################################################### poly ################################################################
@@ -503,11 +499,11 @@ path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
 battingf = path + 'dfbatting_player_stats_rttm_OPS.csv'
 dfbatting_player_stats = pd.read_csv(battingf,parse_dates=['debut','finalGame','birthdate'])
 
-dfbatting_player_stats = dfbatting_player_stats[(dfbatting_player_stats['debut'] >= START_DATE) &
-                                                (dfbatting_player_stats['finalGame'] <= END_DATE)]
 df = dfbatting_player_stats
 df = df.reset_index(drop=True)
 df = df[df['AB'] >= 300]
+
+plst = ['pujolal01','rodrial01','jeterde01','vottojo01','fieldpr01','brocklo01','rolensc01','hollima01','willibi01','santoro01','molitpa01','claytro01','goldspa01','molinya01','suzukic01','mcgeewi01']
 
 # add decade
 df['decade'] = (df['yearID'] // 10)*10
@@ -524,9 +520,9 @@ df.teamID = df.teamID.map(teams_map)
 
 pct = 0.20
 
-# custom train / test split on player boundaries.  IE, a player will belong to one and only one set (training or test)
-# for a given run
-df_train, df_test = split_df(df,pct)
+df_test = df[df['playerID'].isin(plst)]
+idx = df[df['playerID'].isin(plst)].index
+df_train = df.drop(idx)
 
 print('Number of Training Records:',len(df_train))
 df_test = df_test[ (df_test['OPS'] > .3) & (df_test['OPS'] < 1.2) & (df['age'] >= 20) & (df['age'] <= 37)  ]
@@ -537,7 +533,7 @@ feature_list = ['lag1_ncHR','lag1_nHR','nage','nheight','ndecade','POS_1B','POS_
 
 feature_list_rttm = ['lag1_rtm_ncHR','lag1_rtm_nHR','nage','nheight','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','ndecade','lag1_rtm_nSLG','lag1_rtm_ncSLG','lag1_rtm_nOBP','lag1_rtm_ncOBP','lag1_rtm_nOPS','lag1_rtm_ncOPS']
 
-ml_comparison = True
+ml_comparison = False
 if ml_comparison == True :
     # make run with out regression to the mean lag statistics  
     machine_learning_runs(df_train, df_test ,feature_list, stats_list,'With Out RTTM','_woRTM.csv')

@@ -2,9 +2,12 @@
 """
 Created on Thu Nov  7 14:30:24 2019
 
-@author: User
+@author: Paul Scheibal
 """
-
+#
+#  This program tries to predict if a player is a first baseman or shortstop
+#  given a feature list
+#
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -50,17 +53,21 @@ from IPython.core.pylabtools import figsize
 import warnings
 warnings.filterwarnings("ignore")
 
+sns.set_style('white') 
 pd.set_option('display.width', 500)
 pd.set_option('display.max_columns', 100)
 pd.set_option('display.notebook_repr_html', True)
 
+fig, ax = plt.subplots()
+ax.grid()
+# calculate BMI index
 def calc_BMI(df,h,w):
     meters = df[h] * 0.0254
     kilograms = df[w] * 0.453582
     BMI = kilograms / (meters ** 2)
     df['BMI'] = round(BMI,2)
     return df
-
+# custom split train/test
 def split_players(df,pct):
     seed(61)
     players = np.array(df.playerID.drop_duplicates())
@@ -70,7 +77,7 @@ def split_players(df,pct):
     test_players = np.array(players[indlst])
     train_players = np.setdiff1d(players,test_players)
     return train_players, test_players
-
+# custom split train/test
 def split_df(df,pct):
     dfx = df[['playerID','G','AB','H','2B','3B','HR','SF','BB','HBP']].groupby('playerID').sum().reset_index()
     dfx = calc_ops(dfx)
@@ -80,16 +87,18 @@ def split_df(df,pct):
     df_train = df[df.playerID.isin(train_p)]
     df_test = df[df.playerID.isin(test_p)]
     return df_train, df_test
-
+# standard OPS calculation function
 def calc_ops(df):    
     df['1B'] = df['H'] - ( df['2B'] + df['3B'] + df['HR'] )  
     df['TB'] =  df['1B'] + (df['2B'] * 2) + (df['3B'] * 3) + (df['HR'] * 4)                             
     df['SLG'] = df['TB'] / df['AB']
-    df['OBP'] = ( df['H'] + df['BB'] + df['HBP'] ) / ( df['AB'] + df['BB'] + df['SF'] + df['HBP'] )                 
+    df['OBP_OB'] = ( df['H'] + df['BB'] + df['HBP'] )
+    df['OBP_PA'] = ( df['AB'] + df['BB'] + df['SF'] + df['HBP'] )   
+    df['OBP'] = df['OBP_OB'] / df['OBP_PA'] 
     df['OPS'] = df['OBP'] + df['SLG'] 
     df['AVG'] = df['H'] / df['AB']
     return  df
-
+# classifation metrics
 def classification_metrics(X_test, y_test, y_pred, classifier,clr,lbl, roctitle,showflag):
     print('Accuracy Score: %1.4f' % accuracy_score(y_pred,y_test))
     print('Confusion Maxtrix: ')
@@ -120,6 +129,7 @@ FSHZ = 17
 START_DATE = datetime.strptime(str(START_YEAR)+'-01-01','%Y-%m-%d')
 END_DATE = datetime.strptime(str(END_YEAR)+'-12-31','%Y-%m-%d')
 LEGEND_PROPERTIES = {'weight':'bold'}
+path = 'C:\\Users\\User\\Documents\\PAUL\\Springboard\\core\\'
 
 
 battingf = path + 'dfbatting_player_allstats.csv'

@@ -4,6 +4,8 @@ Created on Wed Sep 18 12:31:14 2019
 
 @author: Paul Scheibal
 #
+#  Predicts Career OPS
+#
 #  This program runs a series of regression machine learning algorithms using the 
 #  predictive model for baseball player performance prediction.  The models used are from 
 #  sklearn machine learning library and are
@@ -73,7 +75,7 @@ def save_stats_file(path, fn, df):
 
 # custom split into training and test sets where a player will belong to one and only one set (training or testing).
 def split_players(df,pct):
-    random.seed(63)
+    random.seed(70)
     players = np.array(df.playerID.drop_duplicates())
     plen = len(players)
     indlst = random.sample(range(0,plen), round(pct*plen))
@@ -128,12 +130,12 @@ def calc_regression_stats(X,y,yp):
 # various plots for assessing each machine learning run for each algorithm
 def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     df_results = df.loc[y_test.index, :]
-    df_results['predOPS'] = y_pred
-    df_results['error'] = 100 * ( ( df_results['OPS'] - df_results['predOPS'] ) / df_results['OPS'])
-    df_results['abserror'] = np.abs(100 * ( ( df_results['OPS'] - df_results['predOPS'] ) / df_results['OPS']))
+    df_results['predcOPS'] = y_pred
+    df_results['error'] = 100 * ( ( df_results['cOPS'] - df_results['predcOPS'] ) / df_results['cOPS'])
+    df_results['abserror'] = np.abs(100 * ( ( df_results['cOPS'] - df_results['predcOPS'] ) / df_results['cOPS']))
     #
-    df_results['predOPS'] = df_results['predOPS']
-    df_results['OPS'] = df_results['OPS']
+    df_results['predcOPS'] = df_results['predcOPS']
+    df_results['cOPS'] = df_results['cOPS']
     df_results['error'] = df_results['error']
     df_out = df_results[stats_list]
     save_stats_file(path,fn, df_out)
@@ -154,18 +156,18 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     ax.grid()
     acc = df_results.error
     ptile = np.percentile(acc,[15,85,2.5,97.5])
-    sns.regplot(x=df_out['OPS'], y=df_out['predOPS'],
+    sns.regplot(x=df_out['cOPS'], y=df_out['predcOPS'],
                 line_kws={"color":"r","alpha":0.7,"lw":5},
                 scatter_kws={"color":"b","s":8}
                )
-    plt.title('Actual OPS vs. Predicted OPS')
-    plt.xlabel('Actual OPS')
-    plt.ylabel('Predicted OPS')
+    plt.title('Actual cOPS vs. Predicted cOPS')
+    plt.xlabel('Actual cOPS')
+    plt.ylabel('Predicted cOPS')
     plt.show()
     fig, ax = plt.subplots()
     ax.grid()
     plt.hist(acc,bins=25)
-    plt.title('Error : Actual OPS - Predicted OPS')
+    plt.title('Error : Actual cOPS - Predicted cOPS')
     plt.xlabel('Error')
     plt.ylabel('Frequency')
     lab = 'Sampling Mean: %1.2f' % round(np.mean(df_out.error),2)
@@ -194,8 +196,8 @@ def lr_results(df,X_test,y_test,y_pred,path,fn,stats_list,mdlinst):
     fig, ax = plt.subplots()
     ax.grid()
     plt.plot(y_pred, (y_pred-y_test), marker='.',linestyle='none',color='b')
-    plt.title('Predicted OPS vs. Residuals')
-    plt.xlabel('Predicted OPS')
+    plt.title('Predicted cOPS vs. Residuals')
+    plt.xlabel('Predicted cOPS')
     plt.ylabel('Residuals')
     plt.show()
     return True
@@ -206,9 +208,9 @@ def machine_learning_runs(df_train, df_test ,feature_list, stats_list,txt,fileen
     print('**************** ' + txt + '*******************')
     # setup training and testing sets
     X_train = df_train[feature_list]
-    y_train = df_train.OPS
+    y_train = df_train.cOPS
     X_test = df_test[feature_list]
-    y_test = df_test.OPS   
+    y_test = df_test.cOPS   
     ################################################### Lasso ###################################################################    
     print('\n')
     print('Linear Regression - Lasso')
@@ -279,7 +281,7 @@ def machine_learning_runs(df_train, df_test ,feature_list, stats_list,txt,fileen
     print('Testing Statistics: ')
     print('\n')
     y_pred = gs.predict(X_test)
-    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB' + fileending,stats_list,gs) 
+    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGBc' + fileending,stats_list,gs) 
     print(gs.best_params_)
     ####################################################### Ridge ##############################################################
     print('\n')
@@ -307,16 +309,16 @@ def machine_learning_runs(df_train, df_test ,feature_list, stats_list,txt,fileen
     print('Testing Statistics: ')
     print('\n')
     y_pred = gs.predict(X_test)   
-    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRidge' + fileending,stats_list,ridge)
+    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRidgec' + fileending,stats_list,ridge)
     print(gs.best_params_)
     return True
 
 def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
     # setup training and testing sets
     X_train = df_train[feature_list]
-    y_train = df_train.OPS
+    y_train = df_train.cOPS
     X_test = df_test[feature_list]
-    y_test = df_test.OPS  
+    y_test = df_test.cOPS  
     ################################################### Lasso ###################################################################    
     print('\n')
     print('Linear Regression - Lasso')
@@ -367,7 +369,7 @@ def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
     print('Testing Statistics: ')
     print('\n')
     y_pred = gs.predict(X_test)
-    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB_GS.csv',stats_list,gs) 
+    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsXGB_GSc.csv',stats_list,gs) 
     print(gs.best_params_)
     ####################################################### Ridge ##############################################################
     print('\n')
@@ -395,7 +397,7 @@ def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
     print('Testing Statistics: ')
     print('\n')
     y_pred = gs.predict(X_test)   
-    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRidge_GS.csv',stats_list,ridge)
+    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRidge_GSc.csv',stats_list,ridge)
     print(gs.best_params_)
     ###################################################### Random Forests #########################################################   
     print('\n')
@@ -431,7 +433,7 @@ def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
     print('\n')
     y_pred = gs.predict(X_test)  
     
-    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF_GS.csv',stats_list,gs)
+    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsRF_GSc.csv',stats_list,gs)
     
     print(gs.best_params_)    
     #################################################### SVM ###################################################################    
@@ -465,7 +467,7 @@ def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
     print('\n')
     y_pred = gs.predict(X_test)
     
-    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM_GS.csv',stats_list,gs)
+    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsSVM_GSc.csv',stats_list,gs)
     
     print(gs.best_params_)
     ###################################################### poly ################################################################
@@ -491,7 +493,7 @@ def machine_learning_runs_all(df_train, df_test ,feature_list, stats_list):
     
     y_pred = gs.predict(X_test_)
     
-    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsPoly.csv',stats_list,gs)
+    lr_results(df,X_test,y_test,y_pred,path,'OPSpredictionsPolyc.csv',stats_list,gs)
     
     print(gs.best_params_)
 
@@ -529,10 +531,10 @@ pct = 0.20
 df_train, df_test = split_df(df,pct)
 
 print('Number of Training Records:',len(df_train))
-df_test = df_test[ (df_test['OPS'] > .3) & (df_test['OPS'] < 1.2) & (df['age'] >= 20) & (df['age'] <= 37)  ]
+df_test = df_test[ (df_test['OPS'] > .3) & (df_test['OPS'] < 1.2) & (df['AB'] >= 300) & (df['age'] >= 20) & (df['age'] <= 37)  ]
 print('Number of Testing Records:',len(df_test))
 # list of columns to output to file once run is completed.    
-stats_list = ['yearID','playerID','playername','OPS','predOPS','error','AB','H','AVG','HR','3B','2B','1B','POS','age','height','lag1_rtm_OPS']
+stats_list = ['yearID','playerID','playername','cOPS','predcOPS','error','AB','H','AVG','HR','3B','2B','1B','POS','age','height','lag1_rtm_OPS']
 feature_list = ['lag1_ncHR','lag1_nHR','nage','nheight','ndecade','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','lag1_nSLG','lag1_ncSLG','lag1_nOBP','lag1_ncOBP','lag1_nOPS','lag1_ncOPS']
 
 feature_list_rttm = ['lag1_rtm_ncHR','lag1_rtm_nHR','nage','nheight','POS_1B','POS_2B','POS_3B','POS_SS','POS_OF','ndecade','lag1_rtm_nSLG','lag1_rtm_ncSLG','lag1_rtm_nOBP','lag1_rtm_ncOBP','lag1_rtm_nOPS','lag1_rtm_ncOPS']
@@ -545,6 +547,7 @@ if ml_comparison == True :
     # make run with regression to the mean lag statistics
     machine_learning_runs(df_train, df_test ,feature_list_rttm, stats_list, 'RTTM','_wRTM.csv')
 else:
-    machine_learning_runs_all(df_train, df_test ,feature_list, stats_list)
+    machine_learning_runs_all(df_train, df_test ,feature_list_rttm, stats_list)
+
 
 
