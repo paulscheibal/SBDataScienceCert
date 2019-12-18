@@ -2,15 +2,12 @@
 """
 Created on Fri Nov 22 13:52:55 2019
 
-@author: User
+@author: Paul Scheibal
 """
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Nov 19 08:02:25 2019
-
-@author: User
-"""
-
+# 
+#  Calculate the regression towards the mean for all years 
+#  This will be input to the lag creation program
+#
 
 import pandas as pd
 import numpy as np
@@ -48,13 +45,13 @@ import random
 import warnings
 warnings.filterwarnings("ignore")
 
-
+# standard save routine
 def save_stats_file(path, fn, df):
     stf = path + fn
     df.to_csv(stf, index=None, header=True)
     return True
 
-
+# standard OPS calculation routine
 def calc_ops(df):    
     df['1B'] = df['H'] - ( df['2B'] + df['3B'] + df['HR'] )  
     df['TB'] =  df['1B'] + (df['2B'] * 2) + (df['3B'] * 3) + (df['HR'] * 4)                             
@@ -66,9 +63,8 @@ def calc_ops(df):
     df['AVG'] = df['H'] / df['AB']
     return  df
 
-#dfOPSclass = pd.DataFrame(OPS_scale)
-#OPS_Classifier(df,dfOPSclass)
-
+# SLG rtm calculation using Binomial Estimator
+# no longer used
 def calc_SLG_rtm(df,dfrtm,yl):
     df = df[['yearID','AB','H','BB','HBP','SF','OBP','1B','2B','3B','HR']]
     rtmlst = []
@@ -103,6 +99,7 @@ def calc_SLG_rtm(df,dfrtm,yl):
     dfrtm = pd.merge(dfrtm,dfSLGrtm,on='yearID')
     return dfrtm
 
+# HR rtm calculation using Binomial Estimator
 def calc_HR_rtm(df,yl):
     df = df[['yearID','H','HR']]
     df['HRpercent'] = df['HR'] / df['H']
@@ -124,6 +121,7 @@ def calc_HR_rtm(df,yl):
     dfrtm = dfrtm.drop(['H','HR'],axis=1)
     return dfrtm
 
+# H rtm calculation using Binomial Estimator
 def calc_H_rtm(df,yl):
     df = df[['yearID','H','AB']]
     df['Havg'] = df['H'] / df['AB']
@@ -145,6 +143,7 @@ def calc_H_rtm(df,yl):
     dfrtm = dfrtm.drop(['H','AB'],axis=1)
     return dfrtm
 
+# H rtm calculation using Binomial Estimator
 def calc_SLG2_rtm(df,yl):
     df = df[['yearID','AB','H','BB','HBP','SF','SLG','1B','2B','3B','HR']]
     dfrtm = pd.DataFrame()
@@ -164,6 +163,7 @@ def calc_SLG2_rtm(df,yl):
     dfrtm = dfrtm.reset_index(drop=True)
     return dfrtm
 
+# OBP rtm calculation using Binomial Estimator
 def calc_OBP_rtm(df,yl):
     df = df[['yearID','AB','H','BB','HBP','SF','OBP','1B','2B','3B','HR']]
     dfrtm = pd.DataFrame()

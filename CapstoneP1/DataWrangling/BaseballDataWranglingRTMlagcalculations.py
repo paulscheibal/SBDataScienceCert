@@ -2,17 +2,12 @@
 """
 Created on Fri Nov 22 14:43:16 2019
 
-@author: User
+@author: Paul Scheibal
 """
-
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Nov 19 08:02:25 2019
-
-@author: User
-"""
-
-
+#
+# This program creates the lag values for the machine learning model.
+# This includes the regression towards the mean.
+#
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -49,7 +44,7 @@ import random
 import warnings
 warnings.filterwarnings("ignore")
 
-
+# OPS calculations
 def calc_ops(df):    
     df['1B'] = df['H'] - ( df['2B'] + df['3B'] + df['HR'] )  
     df['TB'] =  df['1B'] + (df['2B'] * 2) + (df['3B'] * 3) + (df['HR'] * 4)                             
@@ -77,7 +72,8 @@ def avg_yearly_AB(df):
     df.years_played = df.years_played.astype(np.int64)
     return df
 
-def assign_lags(df,dfcareer,dfrtm,yrID,yrID_set,pID,initial):
+# assigns all of the lag values needed for the model
+def assign_lags(df,dfcareer,dfrtm,yrID,end_yrID_set,pID,initial):
     v_rtm_OB = dfrtm[( dfrtm['yearID'] == yrID) ]['RTMOB'].values[0]
     v_rtm_PA = dfrtm[( dfrtm['yearID'] == yrID) ]['RTMPA'].values[0]
     v_rtm_SLGTB = dfrtm[( dfrtm['yearID'] == yrID) ]['RTMTB'].values[0]
@@ -117,37 +113,24 @@ def assign_lags(df,dfcareer,dfrtm,yrID,yrID_set,pID,initial):
     v_cTB = dfcareer[( dfcareer['yearID'] == yrID) & ( dfcareer['playerID'] == pID)]['TB'].values[0]
     v_cSLG = dfcareer[( dfcareer['yearID'] == yrID) & ( dfcareer['playerID'] == pID)]['SLG'].values[0]
     
-    if initial == True:
-        err = np.random.normal(-0.0437,0.0785,1)[0]        
-        v_OB = v_OB + (v_OB * err)
-        v_PA = v_PA + (v_PA * err)
-        v_OBP = v_OBP + (v_OBP * err)
-        v_H = v_H + (v_H * err)
-        v_BB = v_BB + (v_BB * err)
-        v_HBP = v_HBP + (v_HBP * err)
-        v_AB = v_AB + (v_AB * err)
-        v_SF = v_SF + (v_SF * err)
-        v_1B = v_1B + (v_1B * err)
-        v_2B = v_2B + (v_2B * err)
-        v_3B = v_3B + (v_3B * err)
-        v_HR = v_HR + (v_HR * err)
-        v_TB = v_TB + (v_TB * err)
-        v_SLG = v_SLG + (v_SLG * err)
-        
-        v_cOB = v_OB + (v_OB * err)
-        v_cPA = v_PA + (v_PA * err)
-        v_cOBP = v_OBP + (v_OBP * err)
-        v_cH = v_H + (v_H * err)
-        v_cBB = v_BB + (v_BB * err)
-        v_cHBP = v_HBP + (v_HBP * err)
-        v_cAB = v_AB + (v_AB * err)
-        v_cSF = v_SF + (v_SF * err)
-        v_c1B = v_1B + (v_1B * err)
-        v_c2B = v_2B + (v_2B * err)
-        v_c3B = v_3B + (v_3B * err)
-        v_cHR = v_HR + (v_HR * err)
-        v_cTB = v_TB + (v_TB * err)
-        v_cSLG = v_SLG + (v_SLG * err)
+    v_cOBx = dfcareer[( dfcareer['yearID'] == end_yrID_set) & ( dfcareer['playerID'] == pID)]['OBP_OB'].values[0]
+    v_cPAx = dfcareer[( dfcareer['yearID'] == end_yrID_set) & ( dfcareer['playerID'] == pID)]['OBP_PA'].values[0]
+    v_cOBPx = dfcareer[( dfcareer['yearID'] == end_yrID_set) & ( dfcareer['playerID'] == pID)]['OBP'].values[0]   
+    v_cHx = dfcareer[( dfcareer['yearID'] == end_yrID_set) & ( dfcareer['playerID'] == pID)]['H'].values[0]
+    v_cABx = dfcareer[( dfcareer['yearID'] == end_yrID_set) & ( dfcareer['playerID'] == pID)]['AB'].values[0]
+    v_cHRx = dfcareer[( dfcareer['yearID'] == end_yrID_set) & ( dfcareer['playerID'] == pID)]['HR'].values[0]
+    v_cTBx = dfcareer[( dfcareer['yearID'] == end_yrID_set) & ( dfcareer['playerID'] == pID)]['TB'].values[0]
+    v_cSLGx = dfcareer[( dfcareer['yearID'] == end_yrID_set) & ( dfcareer['playerID'] == pID)]['SLG'].values[0]
+    v_cOPSx = dfcareer[( dfcareer['yearID'] == end_yrID_set) & ( dfcareer['playerID'] == pID)]['OPS'].values[0]
+    
+    v_SLG = v_TB / v_AB
+    v_cSLG = v_cTB / v_cAB
+    v_OBP = v_OB / v_PA
+    v_cOBP = v_cOB / v_cPA
+    v_OPS = v_OBP + v_SLG
+    v_cOPS = v_cOBP + v_cSLG
+    v_AVG = v_H / v_AB
+    v_cAVG = v_cH / v_cAB
     
     v_OB_rtm = v_OB + v_rtm_OB
     v_PA_rtm = v_PA + v_rtm_PA
@@ -155,14 +138,15 @@ def assign_lags(df,dfcareer,dfrtm,yrID,yrID_set,pID,initial):
     v_SLGTB_rtm = v_TB + v_rtm_SLGTB
     v_SLGAB_rtm = v_AB + v_rtm_SLGAB
     v_SLG_rtm = v_SLGTB_rtm / v_SLGAB_rtm
+    v_OPS_rtm = v_SLG_rtm + v_OBP_rtm
     
     v_Havg_rtm = v_H + v_rtm_Havg
     v_ABavg_rtm = v_AB + v_rtm_ABavg
-    v_avg_rtm = v_Havg_rtm / v_ABavg_rtm
+    v_AVG_rtm = v_Havg_rtm / v_ABavg_rtm
     v_HRpct_rtm = v_HR + v_rtm_HRpct
     v_Hpct_rtm = v_H + v_rtm_Hpct
     v_HRpercent_rtm = v_HRpct_rtm / v_Hpct_rtm
-    v_H_rtm = v_avg_rtm * v_AB
+    v_H_rtm = v_AVG_rtm * v_AB
     v_HR_rtm = v_HRpercent_rtm * v_H
     
     v_cOB_rtm = v_cOB + v_rtm_OB
@@ -171,22 +155,24 @@ def assign_lags(df,dfcareer,dfrtm,yrID,yrID_set,pID,initial):
     v_cSLGTB_rtm = v_cTB + v_rtm_SLGTB
     v_cSLGAB_rtm = v_cAB + v_rtm_SLGAB
     v_cSLG_rtm = v_cSLGTB_rtm / v_cSLGAB_rtm
+    v_cOPS_rtm = v_cSLG_rtm + v_cOBP_rtm
 
     v_cHavg_rtm = v_cH + v_rtm_Havg
     v_cABavg_rtm = v_cAB + v_rtm_ABavg
-    v_cavg_rtm = v_cHavg_rtm / v_cABavg_rtm
+    v_cAVG_rtm = v_cHavg_rtm / v_cABavg_rtm
     v_cHRpct_rtm = v_cHR + v_rtm_HRpct
     v_cHpct_rtm = v_cH + v_rtm_Hpct
     v_cHRpercent_rtm = v_cHRpct_rtm / v_cHpct_rtm
-    v_cH_rtm = v_cAB * v_avg_rtm 
-    v_cHR_rtm = v_cH * v_HRpercent_rtm
+    v_cH_rtm = v_cAB * v_cAVG_rtm 
+    v_cHR_rtm = v_cH * v_cHRpercent_rtm
 
     
-    v_set = ((yrID_set,pID,
-              v_OB_rtm,  v_PA_rtm,  v_OBP_rtm, v_SLGTB_rtm, v_SLGAB_rtm, v_SLG_rtm, v_Havg_rtm, v_ABavg_rtm, v_avg_rtm, v_HRpct_rtm, v_Hpct_rtm, v_HRpercent_rtm, v_H_rtm, v_HR_rtm,
-              v_cOB_rtm, v_cPA_rtm, v_cOBP_rtm,v_cSLGTB_rtm,v_cSLGAB_rtm,v_cSLG_rtm,v_cHavg_rtm,v_cABavg_rtm,v_cavg_rtm,v_cHRpct_rtm,v_cHpct_rtm,v_cHRpercent_rtm,v_cH_rtm,v_cHR_rtm,
-              v_OB,  v_PA,  v_OBP, v_H,  v_BB,  v_HBP,  v_AB,  v_SF,  v_1B,  v_2B,  v_3B,  v_HR,  v_TB,  v_SLG,              
-              v_cOB, v_cPA, v_cOBP,v_cH, v_cBB, v_cHBP, v_cAB, v_cSF, v_c1B, v_c2B, v_c3B, v_cHR, v_cTB, v_cSLG
+    v_set = ((end_yrID_set,pID,
+              v_OB_rtm,  v_PA_rtm,  v_OBP_rtm, v_SLGTB_rtm, v_SLGAB_rtm, v_SLG_rtm, v_Havg_rtm, v_ABavg_rtm, v_AVG_rtm, v_HRpct_rtm, v_Hpct_rtm, v_HRpercent_rtm, v_H_rtm, v_HR_rtm,v_OPS_rtm,
+              v_cOB_rtm, v_cPA_rtm, v_cOBP_rtm,v_cSLGTB_rtm,v_cSLGAB_rtm,v_cSLG_rtm,v_cHavg_rtm,v_cABavg_rtm,v_cAVG_rtm,v_cHRpct_rtm,v_cHpct_rtm,v_cHRpercent_rtm,v_cH_rtm,v_cHR_rtm, v_cOPS_rtm,
+              v_OB,  v_PA,  v_OBP, v_H,  v_BB,  v_HBP,  v_AB,  v_SF,  v_1B,  v_2B,  v_3B,  v_HR,  v_TB,  v_SLG,  v_OPS,  v_AVG,              
+              v_cOB, v_cPA, v_cOBP,v_cH, v_cBB, v_cHBP, v_cAB, v_cSF, v_c1B, v_c2B, v_c3B, v_cHR, v_cTB, v_cSLG, v_cOPS, v_cAVG,
+              v_cOBx, v_cPAx, v_cOBPx, v_cHx, v_cABx, v_cHRx, v_cTBx, v_cSLGx, v_cOPSx
             ))
     return v_set
 
@@ -200,32 +186,32 @@ def calc_lag1_cumulativeSTAT(df,dfcareer,dfrtm):
         print(cnt,p)
         yID_list = np.array(df[df['playerID'] == p]['yearID'].drop_duplicates().sort_values())
         yID = yID_list[0]
-        lag1_cumulativeSTAT_list.append(assign_lags(df,dfcareer,dfrtm,yID,yID,p,True))
+#        lag1_cumulativeSTAT_list.append(assign_lags(df,dfcareer,dfrtm,yID,yID,p,True))
 #        print(cnt,yearid,p)
         for i in range(0,len(yID_list)-1,1):
             # sum stats over lag1
             end_yearID = yID_list[i + 1]
             yID = yID_list[i]
-            #dfp = df[( df['playerID'] == p ) & ( df['yearID'] < end_yearID)]
             
             lag1_cumulativeSTAT_list.append(assign_lags(df,dfcareer,dfrtm,yID,end_yearID,p,False))
-            #v_rtm_cOB, v_rtm_cPA, v_rtm_cOBP, v_cOBP, v_cOB, v_cPA  = assign_lags(dfcareer,yn,p,False)
             
-    dflag1 = pd.DataFrame(lag1_cumulativeSTAT_list,columns=['yearID','playerID',  'lag1_rtm_OB', 'lag1_rtm_PA', 'lag1_rtm_OBP', 'lag1_rtm_SLGTB', 'lag1_rtm_SLGAB', 'lag1_rtm_SLG', 'lag1_rtm_Havg', 'lag1_rtm_ABavg', 'lag1_rtm_AVG', 'lag1_rtm_HRpct', 'lag1_rtm_Hpct', 'lag1_rtm_HRpercent', 'lag1_rtm_H', 'lag1_rtm_HR',
-                                                                                  'lag1_rtm_cOB','lag1_rtm_cPA','lag1_rtm_cOBP','lag1_rtm_cSLGTB','lag1_rtm_cSLGAB','lag1_rtm_cSLG','lag1_rtm_cHavg','lag1_rtm_cABavg','lag1_rtm_cAVG','lag1_rtm_cHRpct','lag1_rtm_cHpct','lag1_rtm_cHRpercent','lag1_rtm_cH','lag1_rtm_cHR',
-                                                                                  'lag1_OB', 'lag1_PA', 'lag1_OBP', 'lag1_H', 'lag1_BB', 'lag1_HBP', 'lag1_AB', 'lag1_SF', 'lag1_1B', 'lag1_2B', 'lag1_3B', 'lag1_HR', 'lag1_TB', 'lag1_SLG',
-                                                                                  'lag1_cOB','lag1_cPA','lag1_cOBP','lag1_cH','lag1_cBB','lag1_cHBP','lag1_cAB','lag1_cSF','lag1_c1B','lag1_c2B','lag1_c3B','lag1_cHR','lag1_cTB','lag1_cSLG'
+    dflag1 = pd.DataFrame(lag1_cumulativeSTAT_list,columns=['yearID','playerID',  'lag1_rtm_OB', 'lag1_rtm_PA', 'lag1_rtm_OBP', 'lag1_rtm_SLGTB', 'lag1_rtm_SLGAB', 'lag1_rtm_SLG', 'lag1_rtm_Havg', 'lag1_rtm_ABavg', 'lag1_rtm_AVG', 'lag1_rtm_HRpct', 'lag1_rtm_Hpct', 'lag1_rtm_HRpercent', 'lag1_rtm_H', 'lag1_rtm_HR', 'lag1_rtm_OPS',
+                                                                                  'lag1_rtm_cOB','lag1_rtm_cPA','lag1_rtm_cOBP','lag1_rtm_cSLGTB','lag1_rtm_cSLGAB','lag1_rtm_cSLG','lag1_rtm_cHavg','lag1_rtm_cABavg','lag1_rtm_cAVG','lag1_rtm_cHRpct','lag1_rtm_cHpct','lag1_rtm_cHRpercent','lag1_rtm_cH','lag1_rtm_cHR','lag1_rtm_cOPS',
+                                                                                  'lag1_OB', 'lag1_PA', 'lag1_OBP', 'lag1_H', 'lag1_BB', 'lag1_HBP', 'lag1_AB', 'lag1_SF', 'lag1_1B', 'lag1_2B', 'lag1_3B', 'lag1_HR', 'lag1_TB', 'lag1_SLG', 'lag1_OPS','lag1_AVG',
+                                                                                  'lag1_cOB','lag1_cPA','lag1_cOBP','lag1_cH','lag1_cBB','lag1_cHBP','lag1_cAB','lag1_cSF','lag1_c1B','lag1_c2B','lag1_c3B','lag1_cHR','lag1_cTB','lag1_cSLG','lag1_cOPS','lag1_cAVG',
+                                                                                  'cOB', 'cPA', 'cOBP', 'cH', 'cAB', 'cHR', 'cTB', 'cSLG', 'cOPS'
                                                                                ])
     print(dflag1)
     df = pd.merge(df,dflag1,on=['yearID','playerID'])
     df = df.reset_index(drop=True)
     return df
+#
+#def get(df,yr):
+#    v_RTMPA = df[df['yearID'] == yr]['RTMPA'].values[0]
+#    v_RTMOB = df[df['yearID'] == yr]['RTMOB'].values[0]
+#    return v_RTMOB,v_RTMPA
 
-def get(df,yr):
-    v_RTMPA = df[df['yearID'] == yr]['RTMPA'].values[0]
-    v_RTMOB = df[df['yearID'] == yr]['RTMOB'].values[0]
-    return v_RTMOB,v_RTMPA
-
+# calculate current year career stats (career to date)
 def career_stats(df):
     playerlist = np.array(df.playerID.drop_duplicates())
     dfresults_all = pd.DataFrame()
@@ -240,6 +226,7 @@ def career_stats(df):
             dfresults_all = dfresults_all.append(dfresults)
     return dfresults_all
 
+# calculate current year career stats (career to date)
 def calc_career_stats(df,yr):
     dfkeep = [yr]
     dfcurr = df[df['yearID'] <= yr][['playerID','G','AB','H','1B','2B','3B','HR','SB','BB','SO','HBP','SF','RBI']]
@@ -249,7 +236,7 @@ def calc_career_stats(df,yr):
     dfcurr = dfcurr.reset_index(drop=True)
     return dfcurr
 
-
+# standard save routine
 def save_stats_file(path, fn, df):
     stf = path + fn
     df.to_csv(stf, index=None, header=True)
@@ -285,21 +272,18 @@ year_list = list(range(1960,2019))
 
 # no limit to number of at bats.  was filtering on at least 300 AB...may put back in
 df = df[ (df['AB'] >= 300) & ( df['yearID'].isin(year_list) ) ].sort_values(['playerID','yearID']).reset_index(drop=True)
-#( df['yearID'].isin(year_list) ) &
-#( df['age'].isin(age_list) )
 
 df = calc_ops(df)
 
 print('starting career stats ',datetime.now())
-dfm = df[mlist_career]
-dfcareer = career_stats(dfm)
+dfcareer = career_stats(df)
 
 print('starting lag1 stats ',datetime.now())
 df = calc_lag1_cumulativeSTAT(df,dfcareer,dfrtm)
 
 print('starting writing to output files ',datetime.now())
-save_stats_file(path, 'dfbatting_player_stats_rttm_career_20.csv', dfcareer)
-save_stats_file(path, 'dfbatting_player_stats_rttm_OPS_20.csv', df)
+save_stats_file(path, 'dfbatting_player_stats_rttm_career.csv', dfcareer)
+save_stats_file(path, 'dfbatting_player_stats_rttm_OPS.csv', df)
 
 print(datetime.now())
 
