@@ -60,4 +60,13 @@ MachineLearning
 	MachineLearningStory.ipynb - Jupiter Notebook which shows the machine learning algorithms results using OPS as the predictive metric.
 	MachineLearningStoryCareerOPS.ipynb - Jupiter Notebook which shows the machine learning algorithms results using career OPS as the predictive metric.
 	
+ReportOuts
+	
+	BaseballPerformanceAnalysisandResults.pptx - powerpoint presentation of analysis and results of project geared for executive level
+	BaseballPerformanceAnalysisandResults.pdf - pdf version of BaseballPerformanceAnalysisandResults.pptx
+	CapstoneBaseballProjectFinalReport.docx - comprehensive document of baseball batting performance predictability and steroid use era
+	CapstoneBaseballProjectFinalReport.pdf - pdf version of CapstoneBaseballProjectFinalReport.docx
+	ProposalforCapstoneProjectBaseball.docx - document proposing a number of projects.
+	CapstoneProjectBaseballDataWrangling.docx - interim reportout document (data wrangling)
+	CapstoneProject1MilestoneReport.docx - interim reportout document (milestone 1)
 
