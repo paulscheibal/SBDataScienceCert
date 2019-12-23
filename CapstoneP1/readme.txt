@@ -53,9 +53,10 @@ MachineLearning
 	BaseballMachineLearningSelectedPlayerPredictions.py - program which runs a selected set of players against a set of machine learning algorithms.
 	BaseballMLClassificationPOS.py - program which classifies a player as either a shortstop or 1st baseman based upon feature input to the model.
 	BaseballFiveYearProjections.py - program which creates a file of players with five year forecasts to be used as input to the ML algorithms.
-	BaseballFiveYearProjecttionsPlot.py - program which simply plots the best R Square results of 5 year predictive model.
+	BaseballFiveYearProjectionsPlot.py - program which simply plots the best R Square results of 5 year predictive model.
 	BaseballConsistentvsNonConsistentPlayers.py - program which takes as input all players playing 6 years and outputs the top 20 players with the 
 		highest OPS variance and the top 20 players with the lowest variance of OPS. 
+	BaseballMachineLearningFiveYearProjectionRuns.py - program which runs the five year forecast with full set of features against the ML algorithms.
 	MachineLearningStory.ipynb - Jupiter Notebook which shows the machine learning algorithms results using OPS as the predictive metric.
 	MachineLearningStoryCareerOPS.ipynb - Jupiter Notebook which shows the machine learning algorithms results using career OPS as the predictive metric.
 	
