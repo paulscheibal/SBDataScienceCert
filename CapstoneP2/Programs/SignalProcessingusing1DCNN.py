@@ -67,6 +67,8 @@ from sklearn.metrics import classification_report,confusion_matrix
 from keras.layers.advanced_activations import LeakyReLU
 from sklearn.metrics import roc_curve, auc
 import seaborn as sns
+from scipy.signal import welch
+from scipy import signal
 
 sns.set_style('white') 
 
@@ -203,7 +205,7 @@ kernel_size = 16
 pool_size = 8 
 num_classes = 20
 batch_size = 16 # was 32 
-num_epochs = 20
+num_epochs = 15
 test_size = .3
 validation_size = .3
 
