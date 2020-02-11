@@ -38,7 +38,7 @@ Created on Wed Jan 22 08:48:45 2020
 
 import pandas as pd
 import numpy as np
-from datetime import datetime
+import datetime
 import os.path
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -248,6 +248,7 @@ def execute_classifiers(X_train, y_train, X_test, y_test, X_train_scaled, X_test
 
     ########################################### Random Forest ##########################################
     
+    print(datetime.datetime.now())
     print('\n')
     print('Random Forests')
     print('\n')
@@ -262,6 +263,7 @@ def execute_classifiers(X_train, y_train, X_test, y_test, X_train_scaled, X_test
     
     ############################################ XGBoost ###############################################
     
+    print(datetime.datetime.now())
     print('\n')
     print('XGB Classifier')
     print('\n')
@@ -285,6 +287,7 @@ def execute_classifiers(X_train, y_train, X_test, y_test, X_train_scaled, X_test
     
     ############################################# GB  ##################################################
     
+    print(datetime.datetime.now())
     print('\n')
     print('GB Classifier')
     print('\n')
@@ -306,6 +309,7 @@ def execute_classifiers(X_train, y_train, X_test, y_test, X_train_scaled, X_test
     
     ############################################ Knn ##################################################
     
+    print(datetime.datetime.now())
     print('\n')
     print('Knn Classifier')
     print('\n')
@@ -320,6 +324,7 @@ def execute_classifiers(X_train, y_train, X_test, y_test, X_train_scaled, X_test
     
     ########################################### SVM Classifier ########################################
     
+    print(datetime.datetime.now())
     print('\n')
     print('LinearSVC Classifier')
     print('\n')
@@ -330,13 +335,14 @@ def execute_classifiers(X_train, y_train, X_test, y_test, X_train_scaled, X_test
     y_pred = svm_cls.predict(X_test_scaled)
     print(classification_report(y_test, y_pred))
     print(confusion_matrix(y_test, y_pred))
+    print(datetime.datetime.now())
     
     return True
 
 segment_size = 256
 sample_size = segment_size
 samples_per_second = 12000
-sample_interval = samples / samples_per_second
+sample_interval = sample_size / samples_per_second
 sample_rate = 1 / samples_per_second
 freq_high = int(samples_per_second/2)
 denominator = 10

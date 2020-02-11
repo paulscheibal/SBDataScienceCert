@@ -38,7 +38,7 @@ Created on Wed Jan 22 08:48:45 2020
 
 import pandas as pd
 import numpy as np
-from datetime import datetime
+import datetime
 import os.path
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -76,6 +76,7 @@ from scipy.signal import welch
 from scipy import signal
 from sklearn import preprocessing
 import pywt
+#import keras
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -425,22 +426,25 @@ def save_df_file(path, fn, df):
     return True
 
 def execute_classifiers(X_train, y_train, X_test, y_test, X_train_scaled, X_test_scaled):
-
-    ########################################### Random Forest ##########################################
-    
-    print('\n')
-    print('Random Forests')
-    print('\n')
-    clf = RandomForestClassifier( verbose = 1,
-                                n_estimators = 2000)
-    clf.fit(X_train, y_train)
-    print("Accuracy on training set is : {}".format(clf.score(X_train, y_train)))
-    print("Accuracy on test set is : {}".format(clf.score(X_test, y_test)))
-    y_pred = clf.predict(X_test)
-    print(classification_report(y_test, y_pred))
+#
+#    ########################################### Random Forest ##########################################
+#   
+#    print(datetime.datetime.now())
+#    print('\n')
+#    print('Random Forests')
+#    print('\n')
+#    clf = RandomForestClassifier( verbose = 1,
+#                                n_estimators = 2000)
+#    clf.fit(X_train, y_train)
+#    print("Accuracy on training set is : {}".format(clf.score(X_train, y_train)))
+#    print("Accuracy on test set is : {}".format(clf.score(X_test, y_test)))
+#    y_pred = clf.predict(X_test)
+#    print(classification_report(y_test, y_pred))
+#    print(datetime.datetime.now())
     
     ############################################ XGBoost ###############################################
-    
+   
+    print(datetime.datetime.now())
     print('\n')
     print('XGB Classifier')
     print('\n')
@@ -462,60 +466,71 @@ def execute_classifiers(X_train, y_train, X_test, y_test, X_train_scaled, X_test
     print(classification_report(y_test, y_pred))
     print(confusion_matrix(y_test, y_pred))
     
-    ############################################# GB  ##################################################
+    save_df_file(PATH_DATA, 'XGB_X_test.csv', X_test)
+    df_y_test = pd.DataFrame(y_test)
+    save_df_file(PATH_DATA, 'XGB_y_test.csv', df_y_test)
+    df_y_pred = pd.DataFrame(y_pred)
+    save_df_file(PATH_DATA, 'XGB_y_pred.csv', df_y_pred)    
     
-    print('\n')
-    print('GB Classifier')
-    print('\n')
     
-    gb_cls = GradientBoostingClassifier(min_samples_split = 500,
-                                        min_samples_leaf = 50,
-                                        max_depth = 8,
-                                        max_features = 'sqrt',
-                                        subsample = 0.8,
-                                        n_estimators=200,
-                                        learning_rate= 0.2)
-    
-    gb_cls.fit(X_train,y_train)
-    print("Accuracy on training set is : {}".format(gb_cls.score(X_train, y_train)))
-    print("Accuracy on test set is : {}".format(gb_cls.score(X_test, y_test)))
-    y_pred = gb_cls.predict(X_test)
-    print(classification_report(y_test, y_pred))
-    print(confusion_matrix(y_test, y_pred))
-    
-    ############################################ Knn ##################################################
-    
-    print('\n')
-    print('Knn Classifier')
-    print('\n')
-    k=11
-    knn_cls = KNeighborsClassifier(n_neighbors=k)
-    knn_cls.fit(X_train_scaled,y_train)
-    print("Accuracy on training set is : {}".format(knn_cls.score(X_train_scaled, y_train)))
-    print("Accuracy on test set is : {}".format(knn_cls.score(X_test_scaled, y_test)))
-    y_pred = knn_cls.predict(X_test_scaled)
-    print(classification_report(y_test, y_pred))
-    print(confusion_matrix(y_test, y_pred))
-    
-    ########################################### SVM Classifier ########################################
-    
-    print('\n')
-    print('LinearSVC Classifier')
-    print('\n')
-    svm_cls = LinearSVC(C=1)
-    svm_cls.fit(X_train_scaled,y_train)
-    print("Accuracy on training set is : {}".format(svm_cls.score(X_train_scaled, y_train)))
-    print("Accuracy on test set is : {}".format(svm_cls.score(X_test_scaled, y_test)))
-    y_pred = svm_cls.predict(X_test_scaled)
-    print(classification_report(y_test, y_pred))
-    print(confusion_matrix(y_test, y_pred))
+#    ############################################# GB  ##################################################
+#    
+#    print(datetime.datetime.now())
+#    print('\n')
+#    print('GB Classifier')
+#    print('\n')
+#    
+#    gb_cls = GradientBoostingClassifier(min_samples_split = 500,
+#                                        min_samples_leaf = 50,
+#                                        max_depth = 8,
+#                                        max_features = 'sqrt',
+#                                        subsample = 0.8,
+#                                        n_estimators=200,
+#                                        learning_rate= 0.2)
+#    
+#    gb_cls.fit(X_train,y_train)
+#    print("Accuracy on training set is : {}".format(gb_cls.score(X_train, y_train)))
+#    print("Accuracy on test set is : {}".format(gb_cls.score(X_test, y_test)))
+#    y_pred = gb_cls.predict(X_test)
+#    print(classification_report(y_test, y_pred))
+#    print(confusion_matrix(y_test, y_pred))
+#    
+#    ############################################ Knn ##################################################
+#    
+#    print(datetime.datetime.now())
+#    print('\n')
+#    print('Knn Classifier')
+#    print('\n')
+#    k=11
+#    knn_cls = KNeighborsClassifier(n_neighbors=k)
+#    knn_cls.fit(X_train_scaled,y_train)
+#    print("Accuracy on training set is : {}".format(knn_cls.score(X_train_scaled, y_train)))
+#    print("Accuracy on test set is : {}".format(knn_cls.score(X_test_scaled, y_test)))
+#    y_pred = knn_cls.predict(X_test_scaled)
+#    print(classification_report(y_test, y_pred))
+#    print(confusion_matrix(y_test, y_pred))
+#    
+#    ########################################### SVM Classifier ########################################
+#    
+#    print(datetime.datetime.now())
+#    print('\n')
+#    print('LinearSVC Classifier')
+#    print('\n')
+#    svm_cls = LinearSVC(C=1)
+#    svm_cls.fit(X_train_scaled,y_train)
+#    print("Accuracy on training set is : {}".format(svm_cls.score(X_train_scaled, y_train)))
+#    print("Accuracy on test set is : {}".format(svm_cls.score(X_test_scaled, y_test)))
+#    y_pred = svm_cls.predict(X_test_scaled)
+#    print(classification_report(y_test, y_pred))
+#    print(confusion_matrix(y_test, y_pred))
+#    print(datetime.datetime.now())
     
     return True
 
 segment_size = 256
 sample_size = segment_size
 samples_per_second = 12000
-sample_interval = samples / samples_per_second
+sample_interval = sample_size / samples_per_second
 sample_rate = 1 / samples_per_second
 freq_high = int(samples_per_second/2)
 denominator = 10
@@ -555,17 +570,21 @@ input_rpm = baseline_rpm + fault_rpm
 # read data and create features and labels
 feature_input, label_input = create_model_inputs(PATH_DATA,input_file,input_file_name,input_rpm,input_label,segment_size)
 
-df_feature_input = create_df_features(feature_input,column_prefix)
-df_label_input  = pd.DataFrame(label_input)
+#df_feature_input = create_df_features(feature_input,'FFT')
+#df_label_input  = pd.DataFrame(label_input)
 
 # set up data for train/test sets 
 train_signals,test_signals,train_labels,test_labels = train_test_split(feature_input,label_input , test_size=test_size, random_state=61)
 train_signal_length = len(train_signals)
 test_signal_length = len(test_signals)
 
-# create categorical one hots for train and test labels
-train_labels_one_hot = keras.utils.to_categorical(train_labels, num_classes)
-test_labels_one_hot = keras.utils.to_categorical(test_labels, num_classes)
+fn = 'XGB_test_features.out'
+np.savetxt(PATH_DATA+fn,test_signals)
+
+#
+## create categorical one hots for train and test labels
+#train_labels_one_hot = keras.utils.to_categorical(train_labels, num_classes)
+#test_labels_one_hot = keras.utils.to_categorical(test_labels, num_classes)
 
 y_train = train_labels
 y_test = test_labels

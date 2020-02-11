@@ -39,6 +39,8 @@ Created on Wed Jan 22 08:48:45 2020
 import pandas as pd
 import numpy as np
 
+import datetime
+
 import os.path
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -297,8 +299,10 @@ model.compile(loss='categorical_crossentropy',
                 optimizer='adam', metrics=['accuracy'])
 
 
-#stopping_criterion =[EarlyStopping(monitor='val_acc', baseline=0.91, patience=0)]
-custom_callback = ThresholdCallback(threshold=0.91)
+# custom callback routine.  Quit epochs when at least .92 accuracty reached.
+custom_callback = ThresholdCallback(threshold=0.92)
+
+print(datetime.datetime.now())
 
 # fit model
 training_fit = model.fit( train_features,
@@ -312,4 +316,5 @@ training_fit = model.fit( train_features,
 
 # plot statisics on the results of the model run
 plot_accuracy_and_loss(model, training_fit, test_features, test_labels_one_hot,test_labels)
+print(datetime.datetime.now())
 
