@@ -217,7 +217,7 @@ def create_1d_cnn_model(kernel_size, segment_size, pool_size, num_classes):
                      activation='relu',
                      padding='same',input_shape=(segment_size,1)))
     model.add(MaxPooling1D(pool_size=pool_size))
-    model.add(Conv1D(filters = 128, kernel_size = kernel_size, strides = 1,
+    model.add(Conv1D(filters = 256, kernel_size = kernel_size, strides = 1,
                      activation='relu',
                      padding='same',input_shape=(segment_size,1)))
     model.add(MaxPooling1D(pool_size=pool_size))
