@@ -34,7 +34,7 @@ Created on Wed Jan 22 08:48:45 2020
 #
 #        The accelerometer data is sampled at 12,000 samples per second.
 #
-
+#  This program uses DWT engineered features
 
 import pandas as pd
 import numpy as np
