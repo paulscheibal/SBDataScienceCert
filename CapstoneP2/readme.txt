@@ -25,6 +25,8 @@ Code
 
 	SignalProcessingusing1DCNN.py - classificaton model using one dimensional convolutional neural networks with sensor data.
 
+	SignalProcessingFFTDWT1DCNNEngineeredFeatures - classification model using 1D CNN, FFT and DWT engineered features.
+
 Notebooks
 
 	SignalAnalysisforFeatureEngineering.ipynb - Jupyter Notebook which shows the functionality of the Fast Fourier Transform (FFT) and Discrete Wavelet Transfrom (DWT).  
