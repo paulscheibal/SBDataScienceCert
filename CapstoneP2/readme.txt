@@ -1,5 +1,12 @@
 Directory of Sensor Project
 
+This project focuses on the classification of faulty components using sensor data in manufacturing machinery. Feature engineering is the heart of 
+the classic approach to signal processing and machine learning using features extracted from the output of algorithms such as the Fast Fourier 
+Transform (FFT) and Discrete Wavelet Transform (DWT) for this paper. The contemporary approach will use 1D CNN and raw signals as input to the 
+1D CNN model. There is no need to input features to the 1D CNN; the model will automatically define features (feature maps) through backpropogation. 
+Both approaches will be used in this paper and the results compared. Finally, the classic and contemporary approaches will be combined by extracting 
+features from 1D CNN, FFT and DWT and then conventional classification algorithms will be used.
+
 CapstoneP2
 
 ModelApproachSensoTimeSeriesData.pdf - powerpoint in pdf format which describes the two approaches, contemporary and classic approaches with results.
