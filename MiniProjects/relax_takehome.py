@@ -55,14 +55,8 @@ def execute_classifiers(X_train, y_train, X_test, y_test):
     print('Random Forests')
     print('\n')
     
-#    params = {
-#            'n_estimators': [2000],
-#            'max_features': ['auto'],
-#            'max_depth':[8], 
-#            'min_samples_split': [5],
-#            'min_samples_leaf': [2]
-#        }
     rf_cls = RandomForestClassifier(
+                        class_weight={0:1.5, 1:1},
                         n_estimators=2000,
                         max_features='auto',
                         max_depth=4, 
@@ -70,7 +64,6 @@ def execute_classifiers(X_train, y_train, X_test, y_test):
                         min_samples_leaf=2,
                         verbose=0,
                         n_jobs=-1)
-#    gs = GridSearchCV(estimator=rf_cls,param_grid=params,cv=2,n_jobs = -1,verbose = 2)    
     rf_cls.fit(X_train, y_train)    
  
     print("Accuracy on training set is : {}".format(rf_cls.score(X_train, y_train)))
@@ -78,36 +71,26 @@ def execute_classifiers(X_train, y_train, X_test, y_test):
     y_pred = rf_cls.predict(X_test) 
     print(classification_report(y_test, y_pred))
     print(confusion_matrix(y_test, y_pred)) 
-#    print(gs.best_params_)
     print_coefs(X_test.columns, rf_cls.feature_importances_)
-#    
+    
     ############################################ XGBoost ###############################################
    
     print(datetime.now())
     print('\n')
     print('XGB Classifier')
     print('\n')
-
-#    params = {
-#                'colsample_bytree': [0.6],
-#                'learning_rate':[0.1],
-#                'n_estimators': [300],
-#                'max_depth':[6], #5
-#                'alpha':[0.01],
-#                'gamma':[0.01],
-#                'subsamples':[0.6]
-#            }
     
     xgb_cls = XGBClassifier(objective = 'reg:squarederror',
+                            scale_pos_weight=1/1.4,
                             colsample_bytree=0.6,
                             learning_rate=0.1,
                             n_estimators=200,
-                            max_depth=3,
+                            max_depth=4,
                             alpha=0.01,
                             gamma=0.01,
                             subsamples=0.6
                             )    
-#    gs = GridSearchCV(estimator=xgb_cls,param_grid=params,cv=2,n_jobs = -1,verbose = 2)    
+
     xgb_cls.fit(X_train, y_train)      
     
     print("Accuracy on training set is : {}".format(xgb_cls.score(X_train, y_train)))
@@ -115,29 +98,56 @@ def execute_classifiers(X_train, y_train, X_test, y_test):
     y_pred = xgb_cls.predict(X_test) 
     print(classification_report(y_test, y_pred))
     print(confusion_matrix(y_test, y_pred))  
-#    plot_importance(xgb_cls)
-#    pyplot.show()
+
     print_coefs(X_test.columns, xgb_cls.feature_importances_)
     plot_coefs(xgb_cls)
     
-    print(datetime.now())
-    print('\n')
-    print('Knn Classifier')
-    print('\n')
-
-    ############################################ Knn ###############################################
-   
-
-    knn_cls = KNeighborsClassifier(n_neighbors=9)
-#    gs = GridSearchCV(estimator=knn_cls,param_grid=params,cv=2,n_jobs = -1,verbose = 2)    
-    knn_cls.fit(X_train, y_train)    
-    y_pred = knn_cls.predict(X_test) 
-    
-    print("Accuracy on training set is : {}".format(knn_cls.score(X_train, y_train)))
-    print("Accuracy on test set is : {}".format(knn_cls.score(X_test, y_test)))
-
-    print(classification_report(y_test, y_pred))
-    print(confusion_matrix(y_test, y_pred))
+#
+#    ############################################ Knn ###############################################
+#
+#    print(datetime.now())
+#    print('\n')
+#    print('Knn Classifier')
+#    print('\n')
+#
+#    knn_cls = KNeighborsClassifier(n_neighbors=9)
+##    gs = GridSearchCV(estimator=knn_cls,param_grid=params,cv=2,n_jobs = -1,verbose = 2)    
+#    knn_cls.fit(X_train, y_train)    
+#    y_pred = knn_cls.predict(X_test) 
+#    
+#    print("Accuracy on training set is : {}".format(knn_cls.score(X_train, y_train)))
+#    print("Accuracy on test set is : {}".format(knn_cls.score(X_test, y_test)))
+#
+#    print(classification_report(y_test, y_pred))
+#    print(confusion_matrix(y_test, y_pred))
+#    
+#
+#    ############################################ LR Classifier ########################################
+#    
+#    print('\n')
+#    print('LR Classifier')
+#    print('\n')
+#    
+#    c_space = np.logspace(-5, 5, 50)
+#    params = {'C': c_space}
+#    
+#    lr_cls = LogisticRegression()
+#    gs = GridSearchCV(estimator=lr_cls,param_grid=params,cv=2,n_jobs = -1,verbose = 2)    
+#    gs.fit(X_train, y_train)    
+#    
+#    print("Accuracy on training set is : {}".format(gs.score(X_train, y_train)))
+#    print("Accuracy on test set is : {}".format(gs.score(X_test, y_test)))
+#    y_pred = gs.predict(X_test) 
+#    print(classification_report(y_test, y_pred))
+#    print(confusion_matrix(y_test, y_pred))
+#    print(gs.best_params_)
+#    best_logReg = gs.best_estimator_
+#    full_col_names = list(X_train.columns.values)
+#    logReg_coeff = pd.DataFrame({'feature_name': full_col_names, 'model_coefficient': best_logReg.coef_.transpose().flatten()})
+#    logReg_coeff = logReg_coeff.sort_values('model_coefficient',ascending=False)
+#    logReg_coeff_top = logReg_coeff.head(5)
+#    logReg_coeff_bottom = logReg_coeff.tail(5)
+#    print(logReg_coeff)
     
     return True
 
@@ -162,6 +172,7 @@ def print_coefs(features, coefs):
     for i in range(len(features)):
         df.loc[i, 'name'] = features[i]
         df.loc[i, 'coef'] = coefs[i]
+    print('\nFeature Importances: \n')
     print(df.sort_values('coef', ascending = False))
     
     return True
@@ -169,7 +180,7 @@ def print_coefs(features, coefs):
 # print coefficients for extreme gradient boosting
 def plot_coefs(model):
     for i in ['gain','weight','cover','total_gain','total_cover']:
-        print('Feature Importance by '+i+' : ')
+        print('\nFeature Importance by '+i+' : ')
         plot_importance(model, importance_type=i, max_num_features=20,show_values=False)
         pyplot.show()
     
@@ -209,10 +220,12 @@ FENG = PATH + FN_ENG
 df_eng = pd.read_csv(FENG, encoding='latin-1', parse_dates=['time_stamp'])
 FUSERS = PATH + FN_USERS
 df_users = pd.read_csv(FUSERS, encoding='latin-1',parse_dates=['creation_time'])
+print('\n Information on Engagement and Users CSV files\n')
 print(df_eng.head())
 print(df_eng.info())
 print(df_users.head())
 print(df_users.info())
+
 
 df_users.invited_by_user_id = df_users.invited_by_user_id.fillna(0)
 df_users.last_session_creation_time = df_users.last_session_creation_time.fillna(0)
@@ -226,31 +239,47 @@ df_users['signup'] = df_users['creation_source'].isin(['SIGNUP','SIGNUP_GOOGLE_A
 userarr = np.sort(np.array(df_users.user_id))
 minlogins = 3
 df_adopted = create_adopted_user_label(df_eng,userarr,minlogins)
-print(df_adopted)
-print(df_adopted.info())
+#print(df_adopted)
+#print(df_adopted.info())
 
 
 df = df_adopted.merge(df_users, on='user_id')
-print(df)
+print(df.head())
 print(df.info())
+
+dfplot = df[['adopted_user']]
+dfplot['counts'] = 1
+dfplot = dfplot.groupby('adopted_user').count()
+dfplot = dfplot.reset_index(drop=False)
+dfplot['adopted_user_desc'] = dfplot.adopted_user.map({0: 'Adopted User', 1: 'Non Adopted User'})
+
+ax = dfplot.plot(kind='bar',x='adopted_user_desc',y='counts',color='#86bf91',width=0.55,figsize=(11,7))
+ax.set_title('Adopted User Counts vs. Non Adopted User Counts \n',weight='bold',size=14)
+ax.set_xlabel("User Type", labelpad=10, size=14)
+ax.set_ylabel("Counts", labelpad=10,size=14)
+ax.get_legend().remove()
+for tick in ax.get_xticklabels():
+    tick.set_fontsize(11)
+for tick in ax.get_yticklabels():
+    tick.set_fontsize(11)
+plt.xticks(rotation=45)
+plt.show()
 
 # prep for ML
 df = normalize_categories(df,['creation_source'],'cs')
 df = normalize_values(df,['org_id','last_session_creation_time'],
                          ['norg_id','nlast_session_creation_time'],'zeromean') #zeromean or minmax
 
-print(df)
-print(df.info())
 
 feature_list = [
-                'opted_in_to_mailing_list',
-                'enabled_for_marketing_drip',
-                'nlast_session_creation_time',
-                'cs_GUEST_INVITE',
-                'cs_ORG_INVITE',
-                'cs_PERSONAL_PROJECTS',
-                'cs_SIGNUP',
-                'cs_SIGNUP_GOOGLE_AUTH'
+#                'opted_in_to_mailing_list',
+#                'enabled_for_marketing_drip',
+                'nlast_session_creation_time'
+#                'cs_GUEST_INVITE',
+#                'cs_ORG_INVITE',
+#                'cs_PERSONAL_PROJECTS',
+#                'cs_SIGNUP',
+#                'cs_SIGNUP_GOOGLE_AUTH'
                ]
 X = df[feature_list]
 y = df.adopted_user
